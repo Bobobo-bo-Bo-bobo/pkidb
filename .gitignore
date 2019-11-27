@@ -1,0 +1,14 @@
+.idea
+bin
+src/golang.org/
+src/git.ypbind.de/
+src/github.com/
+src/gopkg.in/
+pkg
+*.swp
+tmp/
+samples/
+*.orig
+*.rej
+*.pb.go
+
