@@ -3,7 +3,7 @@ package main
 // PKIConfiguration - Configuration
 type PKIConfiguration struct {
 	CAPublicKey  []byte
-	CAPrivateKEy []byte
+	CAPrivateKey []byte
 	Global       GlobalConfiguration
 	Database     *DatabaseConfiguration
 }
