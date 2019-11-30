@@ -1,3 +1,11 @@
+# Migration from `python-pkidb`
+
+Due to the inability of Golang to handle encryptes private SSL keys (see [crypto/tls: needs a convenience function for reading encrypted keys](https://github.com/golang/go/issues/6722))
+all encrypted private keys (for the CA and/or CRL signing) must be converted the PKCS8 format, encrypted with PKCS5 v2 algorithm and stored in the DER format.
+This can be done by using `openssl pksc8` e.g.:
+
+`openssl pkcs8 -topk8 -in ca_private.key -out ca_private.der -outform DER`
+
 ----
 ## Known issues
 ### Go!
