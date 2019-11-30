@@ -7,6 +7,9 @@ depend:
 	env GOPATH=$(GOPATH) go get -u github.com/sirupsen/logrus
 	env GOPATH=$(GOPATH) go get -u gopkg.in/ini.v1
 	env GOPATH=$(GOPATH) go get -u github.com/nu7hatch/gouuid
+	env GOPATH=$(GOPATH) go get -u github.com/youmark/pkcs8
+	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/pbkdf2
+	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/scrypt
 
 build:
 	env GOPATH=$(GOPATH) go install $(PROGRAMS)
@@ -28,6 +31,7 @@ clean:
 distclean: clean
 	rm -rf src/github.com/
 	rm -rf src/gopkg.in/
+	rm -rf src/golang.org/
 
 uninstall:
 	/bin/rm -f $(DESTDIR)/usr/bin
