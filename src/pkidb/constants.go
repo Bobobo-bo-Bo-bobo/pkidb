@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/x509"
+	"math/big"
 )
 
 const name string = "pkidb"
@@ -16,35 +17,74 @@ var DigestMap = map[string]x509.SignatureAlgorithm{
 	"sha512": x509.SHA512WithRSA,
 }
 
-/*
-  Note: RFC 3280 - 4.1.2.2  Serial number (see https://www.ietf.org/rfc/rfc3280.txt) states:
-
-4.1.2.2  Serial number
-
-   The serial number MUST be a positive integer assigned by the CA to
-   each certificate.  It MUST be unique for each certificate issued by a
-   given CA (i.e., the issuer name and serial number identify a unique
-   certificate).  CAs MUST force the serialNumber to be a non-negative
-   integer.
-
-   Given the uniqueness requirements above, serial numbers can be
-   expected to contain long integers.  Certificate users MUST be able to
-   handle serialNumber values up to 20 octets.  Conformant CAs MUST NOT
-   use serialNumber values longer than 20 octets.
-
-   Note: Non-conforming CAs may issue certificates with serial numbers
-   that are negative, or zero.  Certificate users SHOULD be prepared to
-   gracefully handle such certificates.
-
-
- -> so 0x7fffffffffffffff is the maximum serial number because of "Certificate users MUST be able to
-    handle serialNumber values up to 20 octets"
-
-*/
+// MaximumSerialNumberString - maximum serial number as defined in RFC 3280
+//   Note: RFC 3280 - 4.1.2.2  Serial number (see https://www.ietf.org/rfc/rfc3280.txt) states:
+//
+// 4.1.2.2  Serial number
+//
+//    The serial number MUST be a positive integer assigned by the CA to
+//    each certificate.  It MUST be unique for each certificate issued by a
+//    given CA (i.e., the issuer name and serial number identify a unique
+//    certificate).  CAs MUST force the serialNumber to be a non-negative
+//    integer.
+//
+//    Given the uniqueness requirements above, serial numbers can be
+//    expected to contain long integers.  Certificate users MUST be able to
+//    handle serialNumber values up to 20 octets.  Conformant CAs MUST NOT
+//    use serialNumber values longer than 20 octets.
+//
+//    Note: Non-conforming CAs may issue certificates with serial numbers
+//    that are negative, or zero.  Certificate users SHOULD be prepared to
+//    gracefully handle such certificates.
+//
+//
+//  -> so 0x7fffffffffffffff is the maximum serial number because of "Certificate users MUST be able to
+//     handle serialNumber values up to 20 octets"
 const MaximumSerialNumberString = "0x7fffffffffffffff"
+
+// MaximumSerialNumber -  maximum serial number as defined in RFC 3280
+var MaximumSerialNumber *big.Int
 
 // DefaultConfigurationFile - default configuration file if not specified otherwise
 const DefaultConfigurationFile = "/etc/pkidb/config.ini"
+
+// EnvironmentConfigMap - Map environment variables into their configuration sections
+var EnvironmentConfigMap = map[string]EnvConfig{
+	"PKIDB_GLOBAL_AUTO_RENEW_START_PERIOD": EnvConfig{Section: "global", ConfigKey: "auto_renew_start_period"},
+	"PKIDB_GLOBAL_BACKEND":                 EnvConfig{Section: "global", ConfigKey: "backend"},
+	"PKIDB_GLOBAL_CA_CERTIFICATE":          EnvConfig{Section: "global", ConfigKey: "ca_certificate"},
+	"PKIDB_GLOBAL_CA_PASSPHRASE":           EnvConfig{Section: "global", ConfigKey: "ca_passphrase"},
+	"PKIDB_GLOBAL_CA_PRIVATE_KEY":          EnvConfig{Section: "global", ConfigKey: "ca_private_key"},
+	"PKIDB_GLOBAL_CA_PUBLIC_KEY":           EnvConfig{Section: "global", ConfigKey: "ca_public_key"},
+	"PKIDB_GLOBAL_CRL_CERTIFICATE":         EnvConfig{Section: "global", ConfigKey: "crl_certificate"},
+	"PKIDB_GLOBAL_CRL_DIGEST":              EnvConfig{Section: "global", ConfigKey: "crl_digest"},
+	"PKIDB_GLOBAL_CRL_PASSPHRASE":          EnvConfig{Section: "global", ConfigKey: "crl_passphrase"},
+	"PKIDB_GLOBAL_CRL_PRIVATE_KEY":         EnvConfig{Section: "global", ConfigKey: "crl_private_key"},
+	"PKIDB_GLOBAL_CRL_PUBLIC_KEY":          EnvConfig{Section: "global", ConfigKey: "crl_public_key"},
+	"PKIDB_GLOBAL_CRL_VALIDITY_PERIOD":     EnvConfig{Section: "global", ConfigKey: "crl_validity_period"},
+	"PKIDB_GLOBAL_DIGEST":                  EnvConfig{Section: "global", ConfigKey: "digest"},
+	"PKIDB_GLOBAL_LIST_AS_HEX":             EnvConfig{Section: "global", ConfigKey: "list_as_hex"},
+	"PKIDB_GLOBAL_SERIAL_NUMBER":           EnvConfig{Section: "global", ConfigKey: "serial_number"},
+	"PKIDB_GLOBAL_VALIDITY_PERIOD":         EnvConfig{Section: "global", ConfigKey: "validity_period"},
+	"PKIDB_MYSQL_DATABASE":                 EnvConfig{Section: "mysql", ConfigKey: "database"},
+	"PKIDB_MYSQL_HOST":                     EnvConfig{Section: "mysql", ConfigKey: "host"},
+	"PKIDB_MYSQL_PASSPHRASE":               EnvConfig{Section: "mysql", ConfigKey: "passphrase"},
+	"PKIDB_MYSQL_PORT":                     EnvConfig{Section: "mysql", ConfigKey: "port"},
+	"PKIDB_MYSQL_SSLCACERT":                EnvConfig{Section: "mysql", ConfigKey: "sslcacert"},
+	"PKIDB_MYSQL_SSLCERT":                  EnvConfig{Section: "mysql", ConfigKey: "sslcert"},
+	"PKIDB_MYSQL_SSLKEY":                   EnvConfig{Section: "mysql", ConfigKey: "sslkey"},
+	"PKIDB_MYSQL_USER":                     EnvConfig{Section: "mysql", ConfigKey: "user"},
+	"PKIDB_PGSQL_DATABASE":                 EnvConfig{Section: "pgsql", ConfigKey: "database"},
+	"PKIDB_PGSQL_HOST":                     EnvConfig{Section: "pgsql", ConfigKey: "host"},
+	"PKIDB_PGSQL_PASSPHRASE":               EnvConfig{Section: "pgsql", ConfigKey: "passphrase"},
+	"PKIDB_PGSQL_PORT":                     EnvConfig{Section: "pgsql", ConfigKey: "port"},
+	"PKIDB_PGSQL_SSLCACERT":                EnvConfig{Section: "pgsql", ConfigKey: "sslcacert"},
+	"PKIDB_PGSQL_SSLCERT":                  EnvConfig{Section: "pgsql", ConfigKey: "sslcert"},
+	"PKIDB_PGSQL_SSLKEY":                   EnvConfig{Section: "pgsql", ConfigKey: "sslkey"},
+	"PKIDB_PGSQL_SSLMODE":                  EnvConfig{Section: "pgsql", ConfigKey: "sslmode"},
+	"PKIDB_PGSQL_USER":                     EnvConfig{Section: "pgsql", ConfigKey: "user"},
+	"PKIDB_SQLITE3_DATABASE":               EnvConfig{Section: "sqlite3", ConfigKey: "database"},
+}
 
 // HelpText - Help text
 const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<commandoptions>]

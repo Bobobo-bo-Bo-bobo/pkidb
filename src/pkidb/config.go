@@ -38,3 +38,9 @@ type DatabaseConfiguration struct {
 	SSLKey    string `ini:"sslkey"`
 	SSLMode   string `ini:"sslmode"`
 }
+
+// EnvConfig - For mapping of environment variables to configuration settings
+type EnvConfig struct {
+	Section   string
+	ConfigKey string
+}
