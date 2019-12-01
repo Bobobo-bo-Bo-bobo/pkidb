@@ -1,11 +1,17 @@
 package main
 
+import (
+	"crypto/x509"
+	"time"
+)
+
 // PKIConfiguration - Configuration
 type PKIConfiguration struct {
-	CAPublicKey  []byte
-	CAPrivateKey []byte
-	Global       GlobalConfiguration
-	Database     *DatabaseConfiguration
+	CAPublicKey   []byte
+	CAPrivateKey  []byte
+	Global        GlobalConfiguration
+	Database      *DatabaseConfiguration
+	CACertificate *x509.Certificate
 }
 
 // GlobalConfiguration - Global configration (section global from ini file)
@@ -15,8 +21,8 @@ type GlobalConfiguration struct {
 	CaPassphrase         string `ini:"ca_passphrase"`
 	Digest               string `ini:"digest"`
 	SerialNumber         string `ini:"serial_number"`
-	ValidityPeriod       string `ini:"validity_period"`
-	AutoRenewStartPeriod string `ini:"auto_renew_start_period"`
+	ValidityPeriod       int    `ini:"validity_period"`
+	AutoRenewStartPeriod int    `ini:"auto_renew_start_period"`
 	CrlPublicKey         string `ini:"crl_public_key"`
 	CrlPrivateKey        string `ini:"crl_private_key"`
 	CrlPassphrase        string `ini:"crl_passphrase"`
@@ -43,4 +49,53 @@ type DatabaseConfiguration struct {
 type EnvConfig struct {
 	Section   string
 	ConfigKey string
+}
+
+// X509ExtensionData - X509 extensions
+type X509ExtensionData struct {
+	Name     string
+	Critical bool
+	Subject  string
+	Issuer   string
+	Data     []byte
+}
+
+// X509ExtendedKeyUsageData - X509 extended key usage
+type X509ExtendedKeyUsageData struct {
+	Critical bool
+	Flags    string
+}
+
+// X509SubjectAlternateNameData - X509 SAN extension data
+type X509SubjectAlternateNameData struct {
+	Critical bool
+	Type     string
+	Value    string
+}
+
+// X509BasicConstraintData - X509 basic constraints
+type X509BasicConstraintData struct {
+	Critical bool
+	Type     string
+	Value    string
+}
+
+// X509KeyUsageData - X509 key usage
+type X509KeyUsageData struct {
+	Critical bool
+	Type     string
+}
+
+// SignRequest - Information about CSR to be signed
+type SignRequest struct {
+	CSRData          []byte
+	Extension        []X509ExtensionData
+	ExtendedKeyUsage []X509ExtendedKeyUsageData
+	SAN              []X509SubjectAlternateNameData
+	BasicConstratint []X509BasicConstraintData
+	KeyUsage         []X509KeyUsageData
+	NoRegistration   bool
+	NotBefore        time.Time
+	NotAfter         time.Time
+	AutoRenew        bool
 }

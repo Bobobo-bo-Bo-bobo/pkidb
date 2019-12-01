@@ -17,6 +17,40 @@ var DigestMap = map[string]x509.SignatureAlgorithm{
 	"sha512": x509.SHA512WithRSA,
 }
 
+// ExtendedKeyUsageMap - map extended key usage names to x509.ExtKeyUsage
+var ExtendedKeyUsageMap = map[string]x509.ExtKeyUsage{
+	"any":             x509.ExtKeyUsageAny,
+	"serverauth":      x509.ExtKeyUsageServerAuth,
+	"clientauth":      x509.ExtKeyUsageClientAuth,
+	"codesigning":     x509.ExtKeyUsageCodeSigning,
+	"emailprotection": x509.ExtKeyUsageEmailProtection,
+	"timestamping":    x509.ExtKeyUsageTimeStamping,
+	"mscodeind":       x509.ExtKeyUsageMicrosoftCommercialCodeSigning, // XXX: Is mscodecom == mscodeind ?
+	"mscodecom":       x509.ExtKeyUsageMicrosoftCommercialCodeSigning,
+	"msctlsign":       x509.ExtKeyUsageMicrosoftKernelCodeSigning,
+	"mssgc":           x509.ExtKeyUsageMicrosoftServerGatedCrypto,
+	// TODO:    "msefs": x509.,  - whats this in Golang x509?
+	"nssgc":          x509.ExtKeyUsageNetscapeServerGatedCrypto,
+	"ocspsigning":    x509.ExtKeyUsageOCSPSigning,
+	"ipsecendsystem": x509.ExtKeyUsageIPSECEndSystem,
+	"ipsectunnel":    x509.ExtKeyUsageIPSECTunnel,
+	"ipsecuser":      x509.ExtKeyUsageIPSECUser,
+}
+
+// KeyUsageMap - map key usage strings to x509.KeyUsage
+var KeyUsageMap = map[string]x509.KeyUsage{
+	"digitalsignature":  x509.KeyUsageDigitalSignature,
+	"nonrepudiation":    x509.KeyUsageContentCommitment,
+	"contentcommitment": x509.KeyUsageContentCommitment,
+	"keyencipherment":   x509.KeyUsageKeyEncipherment,
+	"dataencipherment":  x509.KeyUsageDataEncipherment,
+	"keyagreement":      x509.KeyUsageKeyAgreement,
+	"keycertsign":       x509.KeyUsageCertSign,
+	"crlsign":           x509.KeyUsageCRLSign,
+	"encipheronly":      x509.KeyUsageEncipherOnly,
+	"decipheronly":      x509.KeyUsageDecipherOnly,
+}
+
 // MaximumSerialNumberString - maximum serial number as defined in RFC 3280
 //   Note: RFC 3280 - 4.1.2.2  Serial number (see https://www.ietf.org/rfc/rfc3280.txt) states:
 //
