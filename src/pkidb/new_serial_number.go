@@ -23,7 +23,7 @@ func NewSerialNumber(cfg *PKIConfiguration, db PKIDBBackend) (*big.Int, error) {
 		// number. rand.Int returns a value in in [0, MaximumSerialNumber) which may be 0 (although unlikely)
 		serial = serial.Add(serial, big.NewInt(1))
 	} else if cfg.Global.SerialNumber == "increment" {
-		serial, err = db.GetLastSerialNumber(cfg.Database)
+		serial, err = db.GetLastSerialNumber(cfg)
 	} else {
 		return nil, fmt.Errorf("Unsupported serial number generation scheme: %s", cfg.Global.SerialNumber)
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/x509"
+	"database/sql"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type PKIConfiguration struct {
 	Global        GlobalConfiguration
 	Database      *DatabaseConfiguration
 	CACertificate *x509.Certificate
+	DBBackend     PKIDBBackend
 }
 
 // GlobalConfiguration - Global configration (section global from ini file)
@@ -30,6 +32,8 @@ type GlobalConfiguration struct {
 	CrlDigest            string `ini:"crl_digest"`
 	ListAsHex            bool   `ini:"list_as_hex"`
 	Backend              string `ini:"backend"`
+	Sites                string `ini:"sites"`
+	DefaultSite          string `ini:"default_site"`
 }
 
 // DatabaseConfiguration - Database configuration
@@ -43,6 +47,7 @@ type DatabaseConfiguration struct {
 	SSLCert   string `ini:"sslcert"`
 	SSLKey    string `ini:"sslkey"`
 	SSLMode   string `ini:"sslmode"`
+	dbhandle  *sql.DB
 }
 
 // EnvConfig - For mapping of environment variables to configuration settings
@@ -98,4 +103,16 @@ type SignRequest struct {
 	NotBefore        time.Time
 	NotAfter         time.Time
 	AutoRenew        bool
+}
+
+// ImportCertificate - Import certificate
+type ImportCertificate struct {
+	Certificate     *x509.Certificate
+	CSR             *x509.CertificateRequest
+	AutoRenew       bool
+	AutoRenewDelta  int
+	AutoRenewPeriod int
+	Revoked         bool
+	RevokedReason   string
+	RevokedTime     time.Time
 }

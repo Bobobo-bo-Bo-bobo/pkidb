@@ -40,14 +40,11 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 
 	if len(cmdSignTrailing) == 0 {
 		csrData, err = ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return err
-		}
 	} else {
 		csrData, err = ioutil.ReadFile(cmdSignTrailing[0])
-		if err != nil {
-			return err
-		}
+	}
+	if err != nil {
+		return err
 	}
 	sr.CSRData = csrData
 

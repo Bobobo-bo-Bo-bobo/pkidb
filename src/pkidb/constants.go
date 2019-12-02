@@ -6,7 +6,10 @@ import (
 )
 
 const name string = "pkidb"
-const version string = "1.0.0-2019.12.01"
+const version string = "1.0.0-2019.12.02"
+
+// ASN1GeneralizedTimeFormat - ASN1 generalized time format
+const ASN1GeneralizedTimeFormat = "20060102150405Z"
 
 // DigestMap - Map OpenSSL digest to Golang x509.SignatureAlgorithm
 var DigestMap = map[string]x509.SignatureAlgorithm{
@@ -15,6 +18,15 @@ var DigestMap = map[string]x509.SignatureAlgorithm{
 	"sha256": x509.SHA256WithRSA,
 	"sha384": x509.SHA384WithRSA,
 	"sha512": x509.SHA512WithRSA,
+}
+
+// SignatureAlgorithmNameMap - map x509.SignatureAlgorithm to (Python) names
+var SignatureAlgorithmNameMap = map[x509.SignatureAlgorithm]string{
+	x509.MD5WithRSA:    "md5WithRSAEncryption",
+	x509.SHA1WithRSA:   "sha1WithRSAEncryption",
+	x509.SHA256WithRSA: "sha256WithRSAEncryption",
+	x509.SHA384WithRSA: "sha384WithRSAEncryption",
+	x509.SHA512WithRSA: "sha512WithRSAEncryption",
 }
 
 // ExtendedKeyUsageMap - map extended key usage names to x509.ExtKeyUsage
@@ -118,6 +130,47 @@ var EnvironmentConfigMap = map[string]EnvConfig{
 	"PKIDB_PGSQL_SSLMODE":                  EnvConfig{Section: "pgsql", ConfigKey: "sslmode"},
 	"PKIDB_PGSQL_USER":                     EnvConfig{Section: "pgsql", ConfigKey: "user"},
 	"PKIDB_SQLITE3_DATABASE":               EnvConfig{Section: "sqlite3", ConfigKey: "database"},
+}
+
+const (
+	// PKICertificateStatusError - error
+	PKICertificateStatusError int = -2
+	// PKICertificateStatusTemporary - temporary certificate
+	PKICertificateStatusTemporary int = -1
+	// PKICertificateStatusPending - pending certificate
+	PKICertificateStatusPending int = 0
+	// PKICertificateStatusValid - valid certificate
+	PKICertificateStatusValid int = 1
+	// PKICertificateStatusRevoked - revoked certificate
+	PKICertificateStatusRevoked int = 2
+	// PKICertificateStatusExpired - expired certificate
+	PKICertificateStatusExpired int = 3
+	// PKICertificateStatusInvalid - invalid certificate
+	PKICertificateStatusInvalid int = 4
+	// PKICertificateStatusDummy - dummy certificate
+	PKICertificateStatusDummy int = 5
+)
+
+// PKIStatusMap - Map status strings to values
+var PKIStatusMap = map[string]int{
+	"temporary": -1,
+	"pending":   0,
+	"valid":     1,
+	"revoked":   2,
+	"expired":   3,
+	"invalid":   4,
+	"dummy":     5,
+}
+
+// PKIReversStatusMap - Map status values to string
+var PKIReversStatusMap = map[int]string{
+	-1: "temporary",
+	0:  "pending",
+	1:  "valid",
+	2:  "revoked",
+	3:  "expired",
+	4:  "invalid",
+	5:  "dummy",
 }
 
 // HelpText - Help text

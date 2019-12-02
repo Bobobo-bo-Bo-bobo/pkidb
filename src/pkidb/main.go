@@ -15,6 +15,8 @@ func main() {
 	var help = flag.Bool("help", false, "Show help")
 	var version = flag.Bool("version", false, "Show version information")
 	var ok bool
+	var config *PKIConfiguration
+	var command string
 
 	var logFmt = new(log.TextFormatter)
 	logFmt.FullTimestamp = true
@@ -37,12 +39,9 @@ func main() {
 	if *site != "" {
 	}
 
-	if *configFile != "" {
-	}
-
 	trailingArguments := flag.Args()
 	if len(trailingArguments) == 0 {
-		fmt.Fprintln(os.Stderr, "Error: Not enough arguments")
+		fmt.Fprintln(os.Stderr, "Not enough arguments")
 		fmt.Fprintln(os.Stderr, "")
 		showUsage()
 		os.Exit(1)
@@ -52,5 +51,27 @@ func main() {
 	MaximumSerialNumber, ok = MaximumSerialNumber.SetString(MaximumSerialNumberString, 0)
 	if !ok {
 		log.WithFields(log.Fields{"maximum_serial_number_string": MaximumSerialNumberString}).Fatal("Can't generate maximal serial number")
+	}
+
+	config, err := ParseConfiguration(*configFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Can't parse configuration file: %s\n", err)
+		os.Exit(1)
+	}
+	command = trailingArguments[0]
+	switch command {
+	case "import":
+		err = CmdImport(config, trailingArguments[1:])
+	case "sign":
+		err = CmdSign(config, trailingArguments[1:])
+	default:
+		fmt.Fprintln(os.Stderr, "Invalid command")
+		fmt.Fprintln(os.Stderr, "")
+		showUsage()
+		os.Exit(1)
+	}
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 	}
 }
