@@ -112,6 +112,7 @@ type ImportCertificate struct {
 	CSR         *x509.CertificateRequest
 	AutoRenew   *AutoRenew
 	Revoked     *RevokeRequest
+	IsDummy     bool
 }
 
 // AutoRenew - auto renew certificates
@@ -126,4 +127,5 @@ type RevokeRequest struct {
 	SerialNumber *big.Int
 	Reason       string
 	Time         time.Time
+	Force        bool
 }

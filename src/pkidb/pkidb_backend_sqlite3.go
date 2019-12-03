@@ -68,6 +68,43 @@ func (db PKIDBBackendSQLite3) GetLastSerialNumber(cfg *PKIConfiguration) (*big.I
 	return sn, nil
 }
 
+// IsFreeSerialNumber - check if serial number is not used
+func (db PKIDBBackendSQLite3) IsFreeSerialNumber(cfg *PKIConfiguration, serial *big.Int) (bool, error) {
+	var _sn string
+
+	sn := serial.Text(10)
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(sn).Scan(&_sn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Commit()
+			return true, nil
+		}
+		tx.Rollback()
+		return false, err
+	}
+
+	return false, nil
+}
+
+// IsUsedSerialNumber - check if serial number is already used
+func (db PKIDBBackendSQLite3) IsUsedSerialNumber(cfg *PKIConfiguration, serial *big.Int) (bool, error) {
+	free, err := db.IsFreeSerialNumber(cfg, serial)
+	return !free, err
+}
+
 // OpenDatabase - Open database connection
 func (db PKIDBBackendSQLite3) OpenDatabase(cfg *PKIConfiguration) (*sql.DB, error) {
 	dbhandle, err := sql.Open("sqlite3", cfg.Database.Database)
@@ -152,6 +189,8 @@ func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfigurati
 
 // StoreCertificate - Store certificate in database
 func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *ImportCertificate, replace bool) error {
+	var algoid int
+
 	_md5 := fmt.Sprintf("%x", md5.Sum(cert.Certificate.Raw))
 	_sha1 := fmt.Sprintf("%x", sha1.Sum(cert.Certificate.Raw))
 	sn := cert.Certificate.SerialNumber.Text(10)
@@ -169,6 +208,10 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		return err
 	}
 
+	if cert.IsDummy {
+		state = PKICertificateStatusDummy
+	}
+
 	if already && !replace {
 		return fmt.Errorf("A certificate with this serial number already exist in the database")
 	}
@@ -177,9 +220,11 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		state = PKICertificateStatusRevoked
 	}
 
-	algoid, err := db.StoreSignatureAlgorithm(cfg, cert.Certificate.SignatureAlgorithm)
-	if err != nil {
-		return err
+	if !cert.IsDummy {
+		algoid, err = db.StoreSignatureAlgorithm(cfg, cert.Certificate.SignatureAlgorithm)
+		if err != nil {
+			return err
+		}
 	}
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -199,6 +244,23 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 			return err
 		}
 		del.Close()
+	}
+
+	if cert.IsDummy {
+		ins, err := tx.Prepare("INSERT INTO certificate (serial_number, version, state, subject) VALUES (?, ?, ?, ?);")
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		defer ins.Close()
+
+		_, err = ins.Exec(sn, 3, state, DummyCertificateSubject)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		tx.Commit()
+		return nil
 	}
 
 	statement, err := tx.Prepare("INSERT INTO certificate (serial_number, version, start_date, end_date, subject, fingerprint_md5, fingerprint_sha1, certificate, state, issuer, signature_algorithm_id, keysize) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
@@ -490,13 +552,38 @@ func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *Revoke
 	err = query.QueryRow(sn).Scan(&_sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			if rev.Force {
+				// close current transaction to avoid locking issues when calling StoreCertificate
+				tx.Commit()
+
+				dummyCert := &x509.Certificate{
+					SerialNumber: rev.SerialNumber,
+				}
+				ic := &ImportCertificate{
+					Certificate: dummyCert,
+					IsDummy:     true,
+				}
+				err = db.StoreCertificate(cfg, ic, false)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+			} else {
+				tx.Rollback()
+				return fmt.Errorf("Certificate not found in database")
+			}
+		} else {
 			tx.Rollback()
-			return fmt.Errorf("Certificate not found in database")
+			return err
 		}
-		tx.Rollback()
+	}
+	tx.Commit()
+
+	// create a new transaction
+	tx, err = cfg.Database.dbhandle.Begin()
+	if err != nil {
 		return err
 	}
-
 	ins, err := tx.Prepare("UPDATE certificate SET revocation_reason=?, revocation_date=?, state=? WHERE serial_number=?;")
 	if err != nil {
 		tx.Rollback()

@@ -62,6 +62,8 @@ func main() {
 	switch command {
 	case "import":
 		err = CmdImport(config, trailingArguments[1:])
+	case "revoke":
+		err = CmdRevoke(config, trailingArguments[1:])
 	case "sign":
 		err = CmdSign(config, trailingArguments[1:])
 	default:

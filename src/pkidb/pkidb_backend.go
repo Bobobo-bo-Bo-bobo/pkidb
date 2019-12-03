@@ -11,6 +11,8 @@ import (
 type PKIDBBackend interface {
 	Initialise(*PKIConfiguration) error
 	GetLastSerialNumber(*PKIConfiguration) (*big.Int, error)
+	IsFreeSerialNumber(*PKIConfiguration, *big.Int) (bool, error)
+	IsUsedSerialNumber(*PKIConfiguration, *big.Int) (bool, error)
 	OpenDatabase(*PKIConfiguration) (*sql.DB, error)
 	CloseDatabase(*sql.DB) error
 	StoreCertificate(*PKIConfiguration, *ImportCertificate, bool) error

@@ -5,8 +5,11 @@ import (
 	"math/big"
 )
 
-const name string = "pkidb"
-const version string = "1.0.0-2019.12.03"
+const name = "pkidb"
+const version = "1.0.0-2019.12.03"
+
+// DummyCertificateSubject - subject for dummy entry
+const DummyCertificateSubject = "dummy entry"
 
 // OIDMap - map OID to name (see https://oidref.com/)
 var OIDMap = map[string]string{
