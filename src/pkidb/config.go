@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/x509"
 	"database/sql"
+	"math/big"
 	"time"
 )
 
@@ -107,12 +108,22 @@ type SignRequest struct {
 
 // ImportCertificate - Import certificate
 type ImportCertificate struct {
-	Certificate     *x509.Certificate
-	CSR             *x509.CertificateRequest
-	AutoRenew       bool
-	AutoRenewDelta  int
-	AutoRenewPeriod int
-	Revoked         bool
-	RevokedReason   string
-	RevokedTime     time.Time
+	Certificate *x509.Certificate
+	CSR         *x509.CertificateRequest
+	AutoRenew   *AutoRenew
+	Revoked     *RevokeRequest
+}
+
+// AutoRenew - auto renew certificates
+type AutoRenew struct {
+	SerialNumber *big.Int
+	Delta        int
+	Period       int
+}
+
+// RevokeRequest - Revocation request
+type RevokeRequest struct {
+	SerialNumber *big.Int
+	Reason       string
+	Time         time.Time
 }

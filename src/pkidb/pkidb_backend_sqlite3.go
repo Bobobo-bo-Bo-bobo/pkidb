@@ -4,12 +4,15 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"math/big"
+	"strings"
 )
 
 // PKIDBBackendSQLite3 - SQLite3 database
@@ -87,8 +90,11 @@ func (db PKIDBBackendSQLite3) CloseDatabase(h *sql.DB) error {
 }
 
 // StoreCertificateSigningRequest - store CSR
-func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfiguration, csr *x509.CertificateRequest) error {
+func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfiguration, ci *ImportCertificate) error {
 	var _hash string
+
+	sn := ci.Certificate.SerialNumber.Text(10)
+	csr := ci.CSR
 
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
@@ -107,22 +113,35 @@ func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfigurati
 	err = fetch.QueryRow(_hash).Scan(&_hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			insert, err := tx.Prepare("INSERT INTO signing_request (hash, request) VALUES (?, ?);")
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			defer insert.Close()
+
+			_, err = insert.Exec(hash, base64.StdEncoding.EncodeToString(csr.Raw))
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			upd, err := tx.Prepare("UPDATE certificate SET signing_request=? WHERE serial_number=?;")
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			defer upd.Close()
+
+			_, err = upd.Exec(hash, sn)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
 			tx.Commit()
 			return nil
 		}
-		tx.Rollback()
-		return err
-	}
-
-	insert, err := tx.Prepare("INSERT INTO signing_request (hash, request) VALUES (?, ?);")
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	defer insert.Close()
-
-	_, err = insert.Exec(hash, base64.StdEncoding.EncodeToString(csr.Raw))
-	if err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -154,7 +173,7 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		return fmt.Errorf("A certificate with this serial number already exist in the database")
 	}
 
-	if cert.Revoked {
+	if cert.Revoked != nil {
 		state = PKICertificateStatusRevoked
 	}
 
@@ -194,13 +213,85 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		tx.Rollback()
 		return err
 	}
+	tx.Commit()
 
 	if cert.CSR != nil {
-		err = db.StoreCertificateSigningRequest(cfg, cert.CSR)
+		err = db.StoreCertificateSigningRequest(cfg, cert)
 		if err != nil {
-			tx.Rollback()
 			return err
 		}
+	}
+
+	if cert.Certificate.Extensions != nil {
+		err = db.StoreX509Extension(cfg, cert, cert.Certificate.Extensions)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cert.Certificate.ExtraExtensions != nil {
+		err = db.StoreX509Extension(cfg, cert, cert.Certificate.ExtraExtensions)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cert.Revoked != nil {
+		err = db.StoreRevocation(cfg, cert.Revoked)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cert.AutoRenew != nil {
+		err = db.StoreAutoRenew(cfg, cert.AutoRenew)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// StoreAutoRenew - store auto-renew options
+func (db PKIDBBackendSQLite3) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRenew) error {
+	var _sn string
+
+	sn := auto.SerialNumber.Text(10)
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(sn).Scan(&_sn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			return fmt.Errorf("Certificate not found in database")
+		}
+		tx.Rollback()
+		return err
+	}
+
+	upd, err := tx.Prepare("UPDATE certificate SET auto_renewable=?, auto_renew_start_period=?, auto_renew_validity_period=? WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer upd.Close()
+
+	_, err = upd.Exec(true, auto.Period, auto.Delta, sn)
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	tx.Commit()
@@ -294,4 +385,131 @@ func (db PKIDBBackendSQLite3) SerialNumberAlreadyPresent(cfg *PKIConfiguration, 
 
 	tx.Commit()
 	return true, nil
+}
+
+// StoreX509Extension - store x509.Extension in database
+func (db PKIDBBackendSQLite3) StoreX509Extension(cfg *PKIConfiguration, cert *ImportCertificate, extensions []pkix.Extension) error {
+	var _hash string
+	var pkey string
+	var data string
+	var name string
+	var found bool
+	var ids = make(map[string]bool)
+	var idList = make([]string, 0)
+
+	sn := cert.Certificate.SerialNumber.Text(10)
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return err
+	}
+	check, err := tx.Prepare("SELECT hash FROM extension WHERE hash=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer check.Close()
+
+	ins, err := tx.Prepare("INSERT INTO extension (hash, name, critical, data) VALUES (?, ?, ?, ?);")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer ins.Close()
+
+	for _, ext := range extensions {
+		name, found = OIDMap[ext.Id.String()]
+		if !found {
+			name = ext.Id.String()
+		}
+		data = base64.StdEncoding.EncodeToString(ext.Value)
+
+		// primary key is the sha512 hash of name+critical+Base64(data)
+		pkey = fmt.Sprintf("%x", sha512.Sum512([]byte(name+BoolToPythonString(ext.Critical)+data)))
+		err = check.QueryRow(pkey).Scan(&_hash)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				_, err = ins.Exec(pkey, name, ext.Critical, data)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+				ids[pkey] = true
+			} else {
+				tx.Rollback()
+				return err
+			}
+		}
+		ids[pkey] = true
+	}
+
+	for key := range ids {
+		idList = append(idList, key)
+	}
+
+	upd, err := tx.Prepare("UPDATE certificate SET extension=? WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer upd.Close()
+
+	_, err = upd.Exec(strings.Join(idList, ","), sn)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// StoreRevocation - store certificate revocation
+func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *RevokeRequest) error {
+	var _sn string
+
+	sn := rev.SerialNumber.Text(10)
+
+	reason, found := RevocationReasonMap[strings.ToLower(rev.Reason)]
+	if !found {
+		return fmt.Errorf("Unknown revocation reason")
+	}
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(sn).Scan(&_sn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			return fmt.Errorf("Certificate not found in database")
+		}
+		tx.Rollback()
+		return err
+	}
+
+	ins, err := tx.Prepare("UPDATE certificate SET revocation_reason=?, revocation_date=?, state=? WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer ins.Close()
+
+	_, err = ins.Exec(reason, rev.Time, PKICertificateStatusRevoked, sn)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
 }

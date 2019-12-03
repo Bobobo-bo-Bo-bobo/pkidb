@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"database/sql"
 	"math/big"
 )
@@ -16,5 +17,8 @@ type PKIDBBackend interface {
 	StoreSignatureAlgorithm(*PKIConfiguration, x509.SignatureAlgorithm) (int, error)
 	StoreSignatureAlgorithmName(*PKIConfiguration, string) (int, error)
 	SerialNumberAlreadyPresent(*PKIConfiguration, *big.Int) (bool, error)
-	StoreCertificateSigningRequest(*PKIConfiguration, *x509.CertificateRequest) error
+	StoreCertificateSigningRequest(*PKIConfiguration, *ImportCertificate) error
+	StoreX509Extension(*PKIConfiguration, *ImportCertificate, []pkix.Extension) error
+	StoreRevocation(*PKIConfiguration, *RevokeRequest) error
+	StoreAutoRenew(*PKIConfiguration, *AutoRenew) error
 }

@@ -16,6 +16,7 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 	var err error
 	var ic ImportCertificate
 	var data []byte
+	var ar *AutoRenew
 
 	argParse := flag.NewFlagSet("cmd-import", flag.ExitOnError)
 	var autoRenew = argParse.Bool("auto-renew", false, "Renew auto renawable certificates that will expire")
@@ -45,8 +46,14 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 		return err
 	}
 
+	ar = &AutoRenew{
+		SerialNumber: ic.Certificate.SerialNumber,
+		Delta:        cfg.Global.AutoRenewStartPeriod,
+		Period:       cfg.Global.ValidityPeriod,
+	}
+
 	if *autoRenew {
-		ic.AutoRenew = true
+		ic.AutoRenew = ar
 	}
 
 	if *csr != "" {
@@ -55,7 +62,7 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 			return err
 		}
 		pblock, _ = pem.Decode(data)
-		ic.CSR, err = x509.ParseCertificateRequest(data)
+		ic.CSR, err = x509.ParseCertificateRequest(pblock.Bytes)
 		if err != nil {
 			return err
 		}
@@ -65,29 +72,40 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 		if *delta < 0 {
 			return fmt.Errorf("Delta must be greater than 0")
 		}
-		ic.AutoRenewDelta = *delta
+		if ic.AutoRenew == nil {
+			ic.AutoRenew = ar
+		}
+		ic.AutoRenew.Delta = *delta
 	}
 
 	if *period != 0 {
 		if *period < 0 {
 			return fmt.Errorf("Period must be greater than 0")
 		}
-		ic.AutoRenewPeriod = *period
+		if ic.AutoRenew == nil {
+			ic.AutoRenew = ar
+		}
+		ic.AutoRenew.Period = *period
 	}
 
 	if *revoked != "" {
 		_revoked := strings.Split(*revoked, ",")
 		if len(_revoked) == 1 {
-			ic.Revoked = true
-			ic.RevokedReason = _revoked[0]
-			ic.RevokedTime = time.Now()
+			ic.Revoked = &RevokeRequest{
+				SerialNumber: ic.Certificate.SerialNumber,
+				Reason:       _revoked[0],
+				Time:         time.Now(),
+			}
 		} else if len(_revoked) == 2 {
-			ic.Revoked = true
-			ic.RevokedReason = _revoked[0]
-			ic.RevokedTime, err = time.Parse(ASN1GeneralizedTimeFormat, _revoked[1])
+			ic.Revoked = &RevokeRequest{
+				SerialNumber: ic.Certificate.SerialNumber,
+				Reason:       _revoked[0],
+			}
+			_t, err := time.Parse(ASN1GeneralizedTimeFormat, _revoked[1])
 			if err != nil {
 				return err
 			}
+			ic.Revoked.Time = _t
 		} else {
 			return fmt.Errorf("Invalid format for revocation option")
 		}
