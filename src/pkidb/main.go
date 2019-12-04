@@ -60,10 +60,10 @@ func main() {
 	}
 	command = trailingArguments[0]
 	switch command {
-	case "import":
-		err = CmdImport(config, trailingArguments[1:])
 	case "delete":
 		err = CmdDelete(config, trailingArguments[1:])
+	case "import":
+		err = CmdImport(config, trailingArguments[1:])
 	case "revoke":
 		err = CmdRevoke(config, trailingArguments[1:])
 	case "search":
