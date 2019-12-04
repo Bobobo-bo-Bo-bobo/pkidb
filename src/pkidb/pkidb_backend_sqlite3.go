@@ -13,6 +13,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"math/big"
 	"strings"
+	"time"
 )
 
 // PKIDBBackendSQLite3 - SQLite3 database
@@ -660,4 +661,266 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 
 	tx.Commit()
 	return nil
+}
+
+// CertificateInformation - get certificate information
+func (db PKIDBBackendSQLite3) CertificateInformation(cfg *PKIConfiguration, serial *big.Int) (*CertificateInformation, error) {
+	var version int
+	var sd *string
+	var startDate time.Time
+	var endDate time.Time
+	var ed *string
+	var subject string
+	var issuer *string
+	var autoRenew bool
+	var autoRenewStart *int
+	var autoRenewPeriod *int
+	var fpMD5 *string
+	var fpSHA1 *string
+	var cert *string
+	var csr *string
+	var rd *string
+	var revDate time.Time
+	var revReason *int
+	var keySize *int
+	var sigAlgo *int
+	var ext *string
+	var algo string
+	var state int
+
+	sn := serial.Text(10)
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	queryCert, err := tx.Prepare("SELECT version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer queryCert.Close()
+
+	err = queryCert.QueryRow(sn).Scan(&version, &sd, &ed, &subject, &autoRenew, &autoRenewStart, &autoRenewPeriod, &issuer, &keySize, &fpMD5, &fpSHA1, &cert, &sigAlgo, &ext, &csr, &state, &rd, &revReason)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			return nil, fmt.Errorf("Certificate not found in database")
+		}
+
+		tx.Rollback()
+		return nil, err
+	}
+	tx.Commit()
+
+	if sigAlgo != nil {
+		algo, err = db.GetSignatureAlgorithmName(cfg, *sigAlgo)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	_state, found := PKIReversStatusMap[state]
+	if !found {
+		return nil, fmt.Errorf("Invalid state value %d", state)
+	}
+
+	result := &CertificateInformation{
+		SerialNumber:       serial,
+		Version:            version,
+		Subject:            subject,
+		SignatureAlgorithm: algo,
+		State:              _state,
+	}
+
+	if cert != nil {
+		result.PublicKey = *cert
+	}
+
+	if sd != nil {
+		startDate, err = time.Parse(SQLite3TimeFormat, *sd)
+		if err != nil {
+			return nil, err
+		}
+		result.NotBefore = &startDate
+	}
+
+	if ed != nil {
+		endDate, err = time.Parse(SQLite3TimeFormat, *ed)
+		if err != nil {
+			return nil, err
+		}
+		result.NotAfter = &endDate
+	}
+
+	if keySize != nil {
+		result.KeySize = *keySize
+	}
+
+	if issuer != nil {
+		result.Issuer = *issuer
+	}
+
+	if fpMD5 != nil {
+		result.FingerPrintMD5 = *fpMD5
+	}
+
+	if fpSHA1 != nil {
+		result.FingerPrintSHA1 = *fpSHA1
+	}
+
+	if csr != nil {
+		_csr, err := db.GetCertificateSigningRequest(cfg, *csr)
+		if err != nil {
+			return nil, err
+		}
+		result.CSR = _csr
+	}
+
+	if autoRenew {
+		ar := &AutoRenew{}
+		if autoRenewStart != nil {
+			ar.Delta = *autoRenewStart * 86400
+		} else {
+			ar.Delta = cfg.Global.AutoRenewStartPeriod * 86400
+		}
+		if autoRenewPeriod != nil {
+			ar.Period = *autoRenewPeriod * 86400
+		} else {
+			ar.Period = cfg.Global.ValidityPeriod * 86400
+		}
+		result.AutoRenewable = ar
+	}
+
+	if ext != nil {
+		if *ext != "" {
+			result.Extensions = make([]X509ExtensionData, 0)
+			for _, e := range strings.Split(*ext, ",") {
+				_ext, err := db.GetX509Extension(cfg, e)
+				if err != nil {
+					return nil, err
+				}
+				result.Extensions = append(result.Extensions, _ext)
+			}
+		}
+	}
+
+	if rd != nil {
+		revDate, err = time.Parse(SQLite3TimeFormat, *rd)
+		if err != nil {
+			return nil, err
+		}
+		rr := &RevokeRequest{
+			Time: revDate,
+		}
+		if revReason != nil {
+			rev, found := RevocationReasonReverseMap[*revReason]
+			if !found {
+				return nil, fmt.Errorf("Invalid revocation reason code %d", *revReason)
+			}
+			rr.Reason = rev
+		} else {
+			// should NEVER happen!
+			rr.Reason = "unspecified"
+		}
+		result.Revoked = rr
+	}
+
+	return result, nil
+}
+
+// GetX509Extension - get X509 extension from database
+func (db PKIDBBackendSQLite3) GetX509Extension(cfg *PKIConfiguration, id string) (X509ExtensionData, error) {
+	var ext X509ExtensionData
+	var name string
+	var crit bool
+	var data string
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return ext, err
+	}
+
+	query, err := tx.Prepare("SELECT name, critical, data FROM extension WHERE hash=?;")
+	if err != nil {
+		return ext, err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(id).Scan(&name, &crit, &data)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			return ext, fmt.Errorf("X509 extension with id %s not found in database", id)
+		}
+		tx.Rollback()
+		return ext, err
+	}
+	tx.Commit()
+
+	ext.Name = name
+	ext.Critical = crit
+	ext.Data, err = base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return ext, err
+	}
+
+	return ext, nil
+}
+
+// GetCertificateSigningRequest - get CSR from hash
+func (db PKIDBBackendSQLite3) GetCertificateSigningRequest(cfg *PKIConfiguration, hash string) (string, error) {
+	var csr string
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return csr, err
+	}
+
+	query, err := tx.Prepare("SELECT request FROM signing_request WHERE hash=?;")
+	if err != nil {
+		tx.Rollback()
+		return csr, err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(hash).Scan(&csr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			return csr, fmt.Errorf("No certificate signing request with id %s found", hash)
+		}
+		tx.Rollback()
+		return csr, err
+	}
+
+	tx.Commit()
+	return csr, nil
+}
+
+// GetSignatureAlgorithmName - get name of signature algorithm for id
+func (db PKIDBBackendSQLite3) GetSignatureAlgorithmName(cfg *PKIConfiguration, id int) (string, error) {
+	var algoName string
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return "", err
+	}
+
+	query, err := tx.Prepare("SELECT algorithm FROM signature_algorithm WHERE id=?;")
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(id).Scan(&algoName)
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+
+	tx.Commit()
+	return algoName, nil
 }

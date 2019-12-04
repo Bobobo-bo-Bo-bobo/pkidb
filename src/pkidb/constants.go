@@ -123,22 +123,28 @@ var RevocationReasonMap = map[string]int{
 }
 
 // RevocationReasonReverseMap - map db values to revocation reason
-var RevocationReasonReverseMap = [11]string{
-	"unspecified",
-	"keyCompromise",
-	"CACompromise",
-	"affiliationChanged",
-	"superseded",
-	"cessationOfOperation",
-	"certificateHold",
-	"unused",
-	"removeFromCRL",
-	"privilegeWithdrawn",
-	"aACompromise",
+var RevocationReasonReverseMap = map[int]string{
+	0:  "unspecified",
+	1:  "keyCompromise",
+	2:  "CACompromise",
+	3:  "affiliationChanged",
+	4:  "superseded",
+	5:  "cessationOfOperation",
+	6:  "certificateHold",
+	7:  "unused",
+	8:  "removeFromCRL",
+	9:  "privilegeWithdrawn",
+	10: "aACompromise",
 }
 
 // ASN1GeneralizedTimeFormat - ASN1 generalized time format
 const ASN1GeneralizedTimeFormat = "20060102150405Z"
+
+// OutputTimeFormat - time format for output
+const OutputTimeFormat = "Mon, 02 Jan 2006 15:04:05 -0700"
+
+// SQLite3TimeFormat - date/time format for SQLite3 storage
+const SQLite3TimeFormat = "2006-01-02 15:04:05-07:00"
 
 // DigestMap - Map OpenSSL digest to Golang x509.SignatureAlgorithm
 var DigestMap = map[string]x509.SignatureAlgorithm{

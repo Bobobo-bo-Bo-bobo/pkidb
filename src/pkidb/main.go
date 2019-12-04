@@ -66,6 +66,8 @@ func main() {
 		err = CmdDelete(config, trailingArguments[1:])
 	case "revoke":
 		err = CmdRevoke(config, trailingArguments[1:])
+	case "show":
+		err = CmdShow(config, trailingArguments[1:])
 	case "sign":
 		err = CmdSign(config, trailingArguments[1:])
 	default:

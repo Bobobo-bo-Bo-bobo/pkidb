@@ -118,8 +118,8 @@ type ImportCertificate struct {
 // AutoRenew - auto renew certificates
 type AutoRenew struct {
 	SerialNumber *big.Int
-	Delta        int
-	Period       int
+	Delta        int // AutoRenewStartPeriod
+	Period       int // ValidityPeriod
 }
 
 // RevokeRequest - Revocation request
@@ -128,4 +128,24 @@ type RevokeRequest struct {
 	Reason       string
 	Time         time.Time
 	Force        bool
+}
+
+// CertificateInformation - certificate information
+type CertificateInformation struct {
+	SerialNumber       *big.Int
+	Version            int
+	KeySize            int
+	SignatureAlgorithm string
+	State              string
+	NotBefore          *time.Time
+	NotAfter           *time.Time
+	Subject            string
+	Issuer             string
+	FingerPrintMD5     string
+	FingerPrintSHA1    string
+	AutoRenewable      *AutoRenew
+	Extensions         []X509ExtensionData
+	PublicKey          string
+	CSR                string
+	Revoked            *RevokeRequest
 }
