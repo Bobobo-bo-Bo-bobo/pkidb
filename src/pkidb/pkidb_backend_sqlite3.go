@@ -635,7 +635,7 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 	}
 	defer del.Close()
 
-	del.QueryRow(sn)
+	_, err = del.Exec(sn)
 	if err != nil {
 		tx.Rollback()
 		return err
