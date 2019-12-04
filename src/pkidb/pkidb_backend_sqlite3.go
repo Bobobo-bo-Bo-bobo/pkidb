@@ -255,7 +255,11 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		}
 		defer ins.Close()
 
-		_, err = ins.Exec(sn, 3, state, DummyCertificateSubject)
+		if cert.DummySubject == "" {
+			_, err = ins.Exec(sn, 3, state, DummyCertificateSubject)
+		} else {
+			_, err = ins.Exec(sn, 3, state, cert.DummySubject)
+		}
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -561,8 +565,9 @@ func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *Revoke
 					SerialNumber: rev.SerialNumber,
 				}
 				ic := &ImportCertificate{
-					Certificate: dummyCert,
-					IsDummy:     true,
+					Certificate:  dummyCert,
+					IsDummy:      true,
+					DummySubject: DummyCertificateSubject,
 				}
 				err = db.StoreCertificate(cfg, ic, false)
 				if err != nil {

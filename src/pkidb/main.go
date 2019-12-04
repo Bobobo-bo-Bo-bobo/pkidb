@@ -62,6 +62,8 @@ func main() {
 	switch command {
 	case "delete":
 		err = CmdDelete(config, trailingArguments[1:])
+	case "export":
+		err = CmdExport(config, trailingArguments[1:])
 	case "import":
 		err = CmdImport(config, trailingArguments[1:])
 	case "revoke":
