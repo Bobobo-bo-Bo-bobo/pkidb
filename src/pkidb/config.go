@@ -152,3 +152,54 @@ type CertificateInformation struct {
 	CSR                string
 	Revoked            *RevokeRequest
 }
+
+// JSONInOutput - JSON format for backup/restore
+type JSONInOutput struct {
+	SigningRequests    []JSONSigningRequest     `json:"signing_request"`
+	Extensions         []JSONExtension          `json:"extension"`
+	Certificates       []JSONCertificate        `json:"certificate"`
+	SignatureAlgorithm []JSONSignatureAlgorithm `json:"signature_algorithm"`
+}
+
+// JSONSignatureAlgorithm - "signature_algorithm" from JSON
+type JSONSignatureAlgorithm struct {
+	ID        string `json:"id"`
+	Algorithm string `json:"algorithm"`
+}
+
+// JSONCertificate - "certificate" from JSON
+type JSONCertificate struct {
+	RevocationDate          *int64   `json:"revocation_date"`
+	AutoRenewValidityPeriod *int     `json:"auto_renew_validity_period"`
+	Certificate             string   `json:"certificate"`
+	EndDate                 *int64   `json:"end_date"`
+	AutoRenewStartPeriod    *int     `json:"auto_renew_start_period"`
+	Extension               []string `json:"extension"`
+	SignatureAlgorithmID    *int     `json:"signature_algorithm_id"`
+	RevocationReason        *int     `json:"revocation_reason"`
+	FingerPrintSHA1         *string  `json:"fingerprint_sha1"`
+	AutoRenewable           bool     `json:"auto_renewable"`
+	State                   int      `json:"state"`
+	Version                 int      `json:"version"`
+	SigningRequest          *string  `json:"signing_request"`
+	KeySize                 int      `json:"keysize"`
+	SerialNumber            string   `json:"serial_number"`
+	FingerPrintMD5          *string  `json:"fingerprint_md5"`
+	Issuer                  *string  `json:"issuer"`
+	StartDate               *int64   `json:"start_date"`
+	Subject                 string   `json:"subject"`
+}
+
+// JSONExtension - "extension" from JSON
+type JSONExtension struct {
+	Data     string `json:"data"`
+	Critical bool   `json:"critical"`
+	Hash     string `json:"hash"`
+	Name     string `json:"name"`
+}
+
+// JSONSigningRequest - "signing_request" from JSON
+type JSONSigningRequest struct {
+	Request string `json:"request"`
+	Hash    string `json:"hash"`
+}
