@@ -600,3 +600,47 @@ func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *Revoke
 	tx.Commit()
 	return nil
 }
+
+// DeleteCertificate - delete certificate from database
+func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *big.Int) error {
+	var _sn string
+	sn := serial.Text(10)
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(sn).Scan(&_sn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			return fmt.Errorf("Certificate not found in database")
+		}
+		tx.Rollback()
+		return err
+	}
+
+	del, err := tx.Prepare("DELETE FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer del.Close()
+
+	del.QueryRow(sn)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
