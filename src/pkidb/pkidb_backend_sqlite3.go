@@ -924,3 +924,41 @@ func (db PKIDBBackendSQLite3) GetSignatureAlgorithmName(cfg *PKIConfiguration, i
 	tx.Commit()
 	return algoName, nil
 }
+
+// SearchSubject - search subject
+func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string) (*big.Int, error) {
+	var sn string
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	// Note: The LIKE operator is case sensitive by default for unicode characters that are beyond the ASCII range.
+	//       (see https://sqlite.org/lang_expr.html#like).
+	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE LOWER(subject) LIKE ?;")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer query.Close()
+
+	err = query.QueryRow(strings.ToLower(search)).Scan(&sn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Commit()
+			return nil, nil
+		}
+		tx.Rollback()
+		return nil, err
+	}
+	tx.Commit()
+
+	serial := big.NewInt(0)
+	serial, ok := serial.SetString(sn, 10)
+	if !ok {
+		return nil, fmt.Errorf("Can't convert serial number %s to big integer", sn)
+	}
+
+	return serial, nil
+}

@@ -28,4 +28,5 @@ type PKIDBBackend interface {
 	GetSignatureAlgorithmName(*PKIConfiguration, int) (string, error)
 	GetCertificateSigningRequest(*PKIConfiguration, string) (string, error)
 	GetX509Extension(*PKIConfiguration, string) (X509ExtensionData, error)
+	SearchSubject(*PKIConfiguration, string) (*big.Int, error)
 }
