@@ -604,6 +604,8 @@ func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *Revoke
 // DeleteCertificate - delete certificate from database
 func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *big.Int) error {
 	var _sn string
+	var _csr *string
+
 	sn := serial.Text(10)
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -611,14 +613,14 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 		return err
 	}
 
-	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
+	query, err := tx.Prepare("SELECT serial_number, signing_request FROM certificate WHERE serial_number=?;")
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	defer query.Close()
 
-	err = query.QueryRow(sn).Scan(&_sn)
+	err = query.QueryRow(sn).Scan(&_sn, &_csr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -639,6 +641,21 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	if _csr != nil {
+		delSN, err := tx.Prepare("DELETE FROM signing_request WHERE hash=?;")
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		defer delSN.Close()
+
+		_, err = delSN.Exec(*_csr)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	tx.Commit()
