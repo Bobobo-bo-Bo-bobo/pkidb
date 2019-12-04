@@ -264,6 +264,37 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 			tx.Rollback()
 			return err
 		}
+
+		if cert.DummyNotBefore != nil {
+			upd, err := tx.Prepare("UPDATE certificate SET start_date=? WHERE serial_number=?;")
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			defer upd.Close()
+
+			_, err = upd.Exec(*cert.DummyNotBefore, sn)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+
+		if cert.DummyNotAfter != nil {
+			upd, err := tx.Prepare("UPDATE certificate SET end_date=? WHERE serial_number=?;")
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			defer upd.Close()
+
+			_, err = upd.Exec(*cert.DummyNotAfter, sn)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+
 		tx.Commit()
 		return nil
 	}

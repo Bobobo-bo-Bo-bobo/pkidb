@@ -48,6 +48,9 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 
 	if *rdate != "" {
 		revtime, err = time.Parse(ASN1GeneralizedTimeFormat, *rdate)
+		if err != nil {
+			return err
+		}
 	} else {
 		revtime = time.Now()
 	}

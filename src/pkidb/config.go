@@ -108,12 +108,14 @@ type SignRequest struct {
 
 // ImportCertificate - Import certificate
 type ImportCertificate struct {
-	Certificate  *x509.Certificate
-	CSR          *x509.CertificateRequest
-	AutoRenew    *AutoRenew
-	Revoked      *RevokeRequest
-	IsDummy      bool
-	DummySubject string
+	Certificate    *x509.Certificate
+	CSR            *x509.CertificateRequest
+	AutoRenew      *AutoRenew
+	Revoked        *RevokeRequest
+	IsDummy        bool
+	DummySubject   string
+	DummyNotBefore *time.Time
+	DummyNotAfter  *time.Time
 }
 
 // AutoRenew - auto renew certificates
