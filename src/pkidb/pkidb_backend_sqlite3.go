@@ -1003,6 +1003,12 @@ func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string
 func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOutput) error {
 	var ext string
 	var extptr *string
+	var sdate time.Time
+	var ptrsdate *time.Time
+	var edate time.Time
+	var ptredate *time.Time
+	var rdate time.Time
+	var ptrrdate *time.Time
 
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
@@ -1025,7 +1031,29 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 			extptr = &ext
 		}
 
-		_, err := ins.Exec(cert.SerialNumber, cert.Version, cert.StartDate, cert.EndDate, cert.Subject, cert.AutoRenewable, cert.AutoRenewStartPeriod, cert.AutoRenewValidityPeriod, cert.Issuer, cert.KeySize, cert.FingerPrintMD5, cert.FingerPrintSHA1, cert.Certificate, cert.SignatureAlgorithmID, extptr, cert.SigningRequest, cert.State, cert.RevocationDate, cert.RevocationReason)
+		// if defined convert UTC timestamp to correct time.Time
+		if cert.StartDate != nil {
+			sdate = time.Unix(0, 1e+09**cert.StartDate)
+			ptrsdate = &sdate
+		} else {
+			ptrsdate = nil
+		}
+
+		if cert.EndDate != nil {
+			edate = time.Unix(0, 1e+09**cert.EndDate)
+			ptredate = &edate
+		} else {
+			ptredate = nil
+		}
+
+		if cert.RevocationDate != nil {
+			rdate = time.Unix(0, int64(1e+09**cert.RevocationDate))
+			ptrrdate = &rdate
+		} else {
+			ptrrdate = nil
+		}
+
+		_, err := ins.Exec(cert.SerialNumber, cert.Version, ptrsdate, ptredate, cert.Subject, cert.AutoRenewable, cert.AutoRenewStartPeriod, cert.AutoRenewValidityPeriod, cert.Issuer, cert.KeySize, cert.FingerPrintMD5, cert.FingerPrintSHA1, cert.Certificate, cert.SignatureAlgorithmID, extptr, cert.SigningRequest, cert.State, ptrrdate, cert.RevocationReason)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1104,6 +1132,7 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 
 	for crows.Next() {
 		jcert := JSONCertificate{}
+		// Note: go-sqlite3 will convert TIMESTAMP to int64 all by itself ;)
 		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &jcert.StartDate, &jcert.EndDate, &jcert.Subject, &jcert.AutoRenewable, &jcert.AutoRenewStartPeriod, &jcert.AutoRenewValidityPeriod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &jcert.RevocationDate, &jcert.RevocationReason)
 		if err != nil {
 			tx.Rollback()
