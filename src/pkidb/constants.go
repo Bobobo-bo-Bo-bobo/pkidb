@@ -286,6 +286,9 @@ const (
 	PKICertificateStatusDummy int = 5
 )
 
+// ListAllSerialNumbers - list all serial numbers
+const ListAllSerialNumbers int = 42
+
 // PKIStatusMap - Map status strings to values
 var PKIStatusMap = map[string]int{
 	"temporary": -1,

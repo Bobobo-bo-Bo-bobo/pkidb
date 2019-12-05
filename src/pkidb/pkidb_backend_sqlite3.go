@@ -1228,3 +1228,148 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 	tx.Commit()
 	return &dump, nil
 }
+
+// GetSerialNumbersByState - list serial numbers by state
+func (db PKIDBBackendSQLite3) GetSerialNumbersByState(cfg *PKIConfiguration, state int) ([]*big.Int, error) {
+	var results = make([]*big.Int, 0)
+	var resmap = make(map[string]bool)
+	var sn string
+
+	_, found := PKIReversStatusMap[state]
+	if !found && state != ListAllSerialNumbers {
+		return nil, fmt.Errorf("Invalid state %d", state)
+	}
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	if state == ListAllSerialNumbers {
+		all, err := tx.Query("SELECT serial_number FROM certificate;")
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		defer all.Close()
+
+		for all.Next() {
+			err = all.Scan(&sn)
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			resmap[sn] = true
+		}
+		err = all.Err()
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	} else {
+
+		search, err := tx.Prepare("SELECT serial_number FROM certificate WHERE state=?;")
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		defer search.Close()
+
+		srows, err := search.Query(state)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		defer srows.Close()
+
+		for srows.Next() {
+			err = srows.Scan(&sn)
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			// Note: Although there are no duplicates here (thanks to the constraints), there will be if
+			//       we scan for expired/invalid based on the date (e.g. if pkidb housekeeping wasn't run yet (or at all))
+			resmap[sn] = true
+		}
+		err = srows.Err()
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		// If housekeeping wasn't run (yet or at all), we can find invalid/expired certificates based on the start/end dates
+		if state == PKICertificateStatusExpired {
+			esearch, err := tx.Prepare("SELECT serial_number FROM certificate WHERE start_date < ? AND end_date < ?;")
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			defer esearch.Close()
+
+			erows, err := esearch.Query(time.Now(), time.Now())
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			defer erows.Close()
+
+			for erows.Next() {
+				err = erows.Scan(&sn)
+				if err != nil {
+					tx.Rollback()
+					return nil, err
+				}
+				resmap[sn] = true
+			}
+			err = erows.Err()
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+		}
+
+		if state == PKICertificateStatusInvalid {
+			isearch, err := tx.Prepare("SELECT serial_number FROM certificate WHERE start_date > end_date OR start_date > ?;")
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			defer isearch.Close()
+
+			irows, err := isearch.Query(time.Now())
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			defer irows.Close()
+
+			for irows.Next() {
+				err = irows.Scan(&sn)
+				if err != nil {
+					tx.Rollback()
+					return nil, err
+				}
+				resmap[sn] = true
+			}
+			err = irows.Err()
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+		}
+	}
+
+	tx.Commit()
+
+	for key := range resmap {
+		serial := big.NewInt(0)
+		serial, ok := serial.SetString(key, 10)
+		if !ok {
+			return nil, fmt.Errorf("Can't convert serial number %s to big integer", key)
+		}
+		results = append(results, serial)
+	}
+
+	return results, nil
+}

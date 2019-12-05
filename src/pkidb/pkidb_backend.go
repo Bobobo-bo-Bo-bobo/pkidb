@@ -31,4 +31,5 @@ type PKIDBBackend interface {
 	SearchSubject(*PKIConfiguration, string) (*big.Int, error)
 	RestoreFromJSON(*PKIConfiguration, *JSONInOutput) error
 	BackupToJSON(*PKIConfiguration) (*JSONInOutput, error)
+	GetSerialNumbersByState(*PKIConfiguration, int) ([]*big.Int, error)
 }
