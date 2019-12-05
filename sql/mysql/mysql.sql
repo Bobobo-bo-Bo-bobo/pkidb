@@ -139,6 +139,12 @@ CREATE TABLE IF NOT EXISTS extension (
   -- criticality flag of the x509 extension
   critical BOOLEAN NOT NULL DEFAULT False,
 
+  -- subject of the extension
+  subject TEXT DEFAULT NULL CHECK(subject<>''),
+
+  -- issuer of the extension
+  issuer TEXT DEFAULT NULL CHECK(issuer<>''),
+
   -- base64 encoded data of the extension
   data TEXT NOT NULL CHECK(data <> '')
 );
