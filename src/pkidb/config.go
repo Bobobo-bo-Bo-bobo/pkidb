@@ -61,8 +61,6 @@ type EnvConfig struct {
 type X509ExtensionData struct {
 	Name     string
 	Critical bool
-	Subject  string
-	Issuer   string
 	Data     []byte
 }
 

@@ -1,19 +1,4 @@
 # Migration from `python-pkidb`
-## Missing database columns
-Due to a bug the (very rarely used) fields `Issuer` and `Subject` of an X509 extension were not stored in the database.
-
-To add the missing columns to the database either backup the data using `pkidb backup`, drop the database, create a new database using the updated schema and restore (`pkidb restore`) the data
-or alter the running databases as described below.
-
-| Database   | Command |
-|:----------:|:-------:|
-| MySQL      |         |
-|            |         |
-| PostgreSQL |         |
-|            |         |
-| SQLite3    | `ALTER TABLE extension ADD COLUMN subject TEXT DEFAULT NULL CHECK(subject<>'');` |
-|            | `ALTER TABLE extension ADD COLUMN issuer TEXT DEFAULT NULL CHECK(issuer<>'');`   |
-
 ## Encrypted private keys
 Due to the inability of Golang to handle encryptes private SSL keys (see [crypto/tls: needs a convenience function for reading encrypted keys](https://github.com/golang/go/issues/6722))
 all encrypted private keys (for the CA and/or CRL signing) must be converted the PKCS8 format, encrypted with PKCS5 v2 algorithm and stored in the DER format.

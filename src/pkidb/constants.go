@@ -514,8 +514,6 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
      --extension=<extdata>                  Parameter <extdata> is a comma separated list of:
                                             <name> - Name of the X509 extension
                                             <critical> - Critical flag. 0: False, 1: True
-                                            <subject> - Subject, is usually empty
-                                            <issuer> - Issuer, is usually empty
                                             <data> - data of the extension
 
      -K [critical:]:<flags>                 Comma separated list of extended key usage bits.

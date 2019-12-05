@@ -68,11 +68,8 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 				return fmt.Errorf("Invalid extension data")
 			}
 
-			e.Subject = rawExt[2]
-			e.Issuer = rawExt[3]
-
-			if rawExt[4] != "" {
-				e.Data, err = base64.StdEncoding.DecodeString(rawExt[4])
+			if rawExt[2] != "" {
+				e.Data, err = base64.StdEncoding.DecodeString(rawExt[2])
 				if err != nil {
 					return err
 				}
