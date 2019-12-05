@@ -62,6 +62,8 @@ func main() {
 	switch command {
 	case "add-dummy":
 		err = CmdAddDummy(config, trailingArguments[1:])
+	case "backup":
+		err = CmdBackup(config, trailingArguments[1:])
 	case "delete":
 		err = CmdDelete(config, trailingArguments[1:])
 	case "export":

@@ -1083,3 +1083,119 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 	tx.Commit()
 	return nil
 }
+
+// BackupToJSON - backup database content to JSON
+func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, error) {
+	var dump JSONInOutput
+	var extptr *string
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	// Certificates
+	crows, err := tx.Query("SELECT serial_number, version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate;")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer crows.Close()
+
+	for crows.Next() {
+		jcert := JSONCertificate{}
+		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &jcert.StartDate, &jcert.EndDate, &jcert.Subject, &jcert.AutoRenewable, &jcert.AutoRenewStartPeriod, &jcert.AutoRenewValidityPeriod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &jcert.RevocationDate, &jcert.RevocationReason)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		if extptr != nil {
+			jcert.Extension = make([]string, 0)
+			for _, e := range strings.Split(*extptr, ",") {
+				jcert.Extension = append(jcert.Extension, e)
+			}
+		}
+
+		dump.Certificates = append(dump.Certificates, jcert)
+	}
+	err = crows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// Signing requests
+	srows, err := tx.Query("SELECT hash, request FROM signing_request;")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer srows.Close()
+
+	for srows.Next() {
+		csr := JSONSigningRequest{}
+		err = srows.Scan(&csr.Hash, &csr.Request)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		dump.SigningRequests = append(dump.SigningRequests, csr)
+	}
+	err = srows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// Extensions
+	erows, err := tx.Query("SELECT hash, name, critical, data FROM extension;")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer erows.Close()
+
+	for erows.Next() {
+		ext := JSONExtension{}
+		err = erows.Scan(&ext.Hash, &ext.Name, &ext.Critical, &ext.Data)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		dump.Extensions = append(dump.Extensions, ext)
+
+	}
+	err = erows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// Signature algorithms
+	arows, err := tx.Query("SELECT id, algorithm FROM signature_algorithm;")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer arows.Close()
+
+	for arows.Next() {
+		sigs := JSONSignatureAlgorithm{}
+		err = arows.Scan(&sigs.ID, &sigs.Algorithm)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		dump.SignatureAlgorithms = append(dump.SignatureAlgorithms, sigs)
+
+	}
+	err = arows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	tx.Commit()
+	return &dump, nil
+}

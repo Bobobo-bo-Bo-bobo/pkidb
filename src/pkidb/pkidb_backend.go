@@ -30,4 +30,5 @@ type PKIDBBackend interface {
 	GetX509Extension(*PKIConfiguration, string) (X509ExtensionData, error)
 	SearchSubject(*PKIConfiguration, string) (*big.Int, error)
 	RestoreFromJSON(*PKIConfiguration, *JSONInOutput) error
+	BackupToJSON(*PKIConfiguration) (*JSONInOutput, error)
 }
