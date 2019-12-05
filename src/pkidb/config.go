@@ -155,10 +155,10 @@ type CertificateInformation struct {
 
 // JSONInOutput - JSON format for backup/restore
 type JSONInOutput struct {
-	SigningRequests    []JSONSigningRequest     `json:"signing_request"`
-	Extensions         []JSONExtension          `json:"extension"`
-	Certificates       []JSONCertificate        `json:"certificate"`
-	SignatureAlgorithm []JSONSignatureAlgorithm `json:"signature_algorithm"`
+	SigningRequests     []JSONSigningRequest     `json:"signing_request"`
+	Extensions          []JSONExtension          `json:"extension"`
+	Certificates        []JSONCertificate        `json:"certificate"`
+	SignatureAlgorithms []JSONSignatureAlgorithm `json:"signature_algorithm"`
 }
 
 // JSONSignatureAlgorithm - "signature_algorithm" from JSON
@@ -169,7 +169,7 @@ type JSONSignatureAlgorithm struct {
 
 // JSONCertificate - "certificate" from JSON
 type JSONCertificate struct {
-	RevocationDate          *int64   `json:"revocation_date"`
+	RevocationDate          *float64 `json:"revocation_date"`
 	AutoRenewValidityPeriod *int     `json:"auto_renew_validity_period"`
 	Certificate             string   `json:"certificate"`
 	EndDate                 *int64   `json:"end_date"`

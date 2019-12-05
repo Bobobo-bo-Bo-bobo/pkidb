@@ -29,4 +29,5 @@ type PKIDBBackend interface {
 	GetCertificateSigningRequest(*PKIConfiguration, string) (string, error)
 	GetX509Extension(*PKIConfiguration, string) (X509ExtensionData, error)
 	SearchSubject(*PKIConfiguration, string) (*big.Int, error)
+	RestoreFromJSON(*PKIConfiguration, *JSONInOutput) error
 }

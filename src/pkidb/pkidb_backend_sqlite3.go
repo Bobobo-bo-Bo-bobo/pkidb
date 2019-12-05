@@ -998,3 +998,88 @@ func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string
 
 	return serial, nil
 }
+
+// RestoreFromJSON - Restore from JSON
+func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOutput) error {
+	var ext string
+	var extptr *string
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return err
+	}
+
+	ins, err := tx.Prepare("INSERT INTO certificate (serial_number, version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer ins.Close()
+
+	// Insert certificates
+	for _, cert := range j.Certificates {
+		if len(cert.Extension) == 0 {
+			extptr = nil
+		} else {
+			ext = strings.Join(cert.Extension, ",")
+			extptr = &ext
+		}
+
+		_, err := ins.Exec(cert.SerialNumber, cert.Version, cert.StartDate, cert.EndDate, cert.Subject, cert.AutoRenewable, cert.AutoRenewStartPeriod, cert.AutoRenewValidityPeriod, cert.Issuer, cert.KeySize, cert.FingerPrintMD5, cert.FingerPrintSHA1, cert.Certificate, cert.SignatureAlgorithmID, extptr, cert.SigningRequest, cert.State, cert.RevocationDate, cert.RevocationReason)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Insert CSR
+	insCSR, err := tx.Prepare("INSERT INTO signing_request (hash, request) VALUES (?, ?);")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer insCSR.Close()
+
+	for _, csr := range j.SigningRequests {
+		_, err := insCSR.Exec(csr.Hash, csr.Request)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Insert extensions
+	insExt, err := tx.Prepare("INSERT INTO extension (hash, name, critical, data) VALUES (?, ?, ?, ?);")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer insExt.Close()
+
+	for _, ext := range j.Extensions {
+		_, err = insExt.Exec(ext.Hash, ext.Name, ext.Critical, ext.Data)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Insert signature algorithms
+	insSig, err := tx.Prepare("INSERT INTO signature_algorithm (id, algorithm) VALUES (?, ?);")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer insSig.Close()
+
+	for _, sig := range j.SignatureAlgorithms {
+		_, err = insSig.Exec(sig.ID, sig.Algorithm)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
+}

@@ -68,6 +68,8 @@ func main() {
 		err = CmdExport(config, trailingArguments[1:])
 	case "import":
 		err = CmdImport(config, trailingArguments[1:])
+	case "restore":
+		err = CmdRestore(config, trailingArguments[1:])
 	case "revoke":
 		err = CmdRevoke(config, trailingArguments[1:])
 	case "search":
