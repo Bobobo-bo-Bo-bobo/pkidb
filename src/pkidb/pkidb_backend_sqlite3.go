@@ -1116,6 +1116,9 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, error) {
 	var dump JSONInOutput
 	var extptr *string
+	var sdateptr *string
+	var edateptr *string
+	var rdateptr *string
 
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
@@ -1132,13 +1135,47 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 
 	for crows.Next() {
 		jcert := JSONCertificate{}
-		// Note: go-sqlite3 will convert TIMESTAMP to int64 all by itself ;)
-		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &jcert.StartDate, &jcert.EndDate, &jcert.Subject, &jcert.AutoRenewable, &jcert.AutoRenewStartPeriod, &jcert.AutoRenewValidityPeriod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &jcert.RevocationDate, &jcert.RevocationReason)
+		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &sdateptr, &edateptr, &jcert.Subject, &jcert.AutoRenewable, &jcert.AutoRenewStartPeriod, &jcert.AutoRenewValidityPeriod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &rdateptr, &jcert.RevocationReason)
 		if err != nil {
 			tx.Rollback()
 			return nil, err
 		}
 
+		// convert Start/End/Revocation date from strings to timestamps
+		if sdateptr != nil {
+			sdate, err := time.Parse(SQLite3TimeFormat, *sdateptr)
+			if err != nil {
+				return nil, err
+			}
+			startdate := sdate.Unix()
+			jcert.StartDate = &startdate
+		} else {
+			jcert.StartDate = nil
+		}
+
+		if edateptr != nil {
+			edate, err := time.Parse(SQLite3TimeFormat, *edateptr)
+			if err != nil {
+				return nil, err
+			}
+			enddate := edate.Unix()
+			jcert.EndDate = &enddate
+		} else {
+			jcert.EndDate = nil
+		}
+
+		if rdateptr != nil {
+			rdate, err := time.Parse(SQLite3TimeFormat, *rdateptr)
+			if err != nil {
+				return nil, err
+			}
+			revdate := float64(rdate.Unix())
+			jcert.RevocationDate = &revdate
+		} else {
+			jcert.RevocationDate = nil
+		}
+
+		// extensions
 		if extptr != nil {
 			jcert.Extension = make([]string, 0)
 			for _, e := range strings.Split(*extptr, ",") {
