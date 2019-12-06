@@ -59,5 +59,10 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 	default:
 		return nil, fmt.Errorf("Unknown database backend found in configuration file")
 	}
+
+	err = LoadSSLKeyPairs(&config)
+	if err != nil {
+		return nil, err
+	}
 	return &config, nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
 	"math/big"
@@ -9,12 +10,13 @@ import (
 
 // PKIConfiguration - Configuration
 type PKIConfiguration struct {
-	CAPublicKey   []byte
-	CAPrivateKey  []byte
-	Global        GlobalConfiguration
-	Database      *DatabaseConfiguration
-	CACertificate *x509.Certificate
-	DBBackend     PKIDBBackend
+	CAPublicKey    *x509.Certificate
+	CACertificate  *tls.Certificate
+	CRLPublicKey   *x509.Certificate
+	CRLCertificate *tls.Certificate
+	Global         GlobalConfiguration
+	Database       *DatabaseConfiguration
+	DBBackend      PKIDBBackend
 }
 
 // GlobalConfiguration - Global configration (section global from ini file)
@@ -90,9 +92,9 @@ type X509KeyUsageData struct {
 	Type     string
 }
 
-// SignRequest - Information about CSR to be signed
-type SignRequest struct {
-	CSRData          []byte
+// SigningRequest - Information about CSR to be signed
+type SigningRequest struct {
+	CSRData          *x509.CertificateRequest
 	Extension        []X509ExtensionData
 	ExtendedKeyUsage []X509ExtendedKeyUsageData
 	SAN              []X509SubjectAlternateNameData

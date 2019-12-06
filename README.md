@@ -1,3 +1,15 @@
+# Changes
+## Subject alternative names
+The criticality of the subject alternative names depend on the subject fields (see [RFC 5280 - Section 4.2.1.6](https://tools.ietf.org/html/rfc5280#section-4.2.1.6)). To ensure generation of valid (according to RFC 5280) certificates the possibility to define the criticality has been removed.
+
+## Key usage flags are always marked as critical
+Keyusage flags (`pkidb sign --keyusage=...`) are **_always_** defined as CRITICAL as defined in [RFC 5280 - Section 4.2.1.3](https://tools.ietf.org/html/rfc5280#section-4.2.1.3) (_When present, conforming CAs SHOULD mark this extension as critical_). Hence the option to set the criticality flag of the keyusage flags has been removed.
+
+## Extended key usage flags
+[RFC 5280 - Section 4.2.1.12](https://tools.ietf.org/html/rfc5280#section-4.2.1.12) defines the behavior for clients to process key usage and extended key usage flags independently and use the certificate as defined by *BOTH* flags. So it's pointless to define the critical flag and the possibility to define it has been removed.
+
+The extended key usage flag `any` has been added.
+
 # Migration from `python-pkidb`
 ## Encrypted private keys
 Due to the inability of Golang to handle encryptes private SSL keys (see [crypto/tls: needs a convenience function for reading encrypted keys](https://github.com/golang/go/issues/6722))

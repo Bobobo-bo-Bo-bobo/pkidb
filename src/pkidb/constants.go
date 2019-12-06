@@ -6,7 +6,7 @@ import (
 )
 
 const name = "pkidb"
-const version = "1.0.0-2019.12.05"
+const version = "1.0.0-2019.12.06"
 
 // DummyCertificateSubject - subject for dummy entry
 const DummyCertificateSubject = "dummy entry"
@@ -519,19 +519,19 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
                                             <critical> - Critical flag. 0: False, 1: True
                                             <data> - data of the extension
 
-     -K [critical:]:<flags>                 Comma separated list of extended key usage bits.
-     --extended-keyusage=[critical:]<flags> Prefix critical: can be used to set the critical flag.
-                                            Additionally dotted numeric OID are allowed too, e.g. 1.2.3.4.5
+     -K <flags>                             Comma separated list of extended key usage bits.
+     --extended-keyusage=<flags>            Additionally dotted numeric OID are allowed too, e.g. 1.2.3.4.5
                                             Known extended key usage bits are (defined in RFC 5280):
                                             serverAuth, clientAuth, codeSigning, emailProtection, timeStamping,
-                                            msCodeInd, msCodeCom, msCTLSign, msSGC, msEFS, nsSGC
+                                            msCodeInd, msCodeCom, msCTLSign, msSGC, nsSGC
 
 
-     -S [critical:]<san>                    subjectAltName extension. Prefix critical: can be used to set the critical
-     --san=[critical:]<san>                 flag on the alternate name list (default: False).
-                                            This is the same as --extension=subjectAltName,[0|1],,,<san>
-                                            but as using the subjectAltName extension is the
-                                            most common extension this is an extra option.
+     -S <san>								Comma separated list of subjectAltName extensions. Format of <san>
+	--san <san>								is <type>:<value>. Supported <type> values are:
+												DNS   - DNS domain name
+												email - email address
+												IP    - IP address (IPv4 and IPv6)
+												URI   - URI
 
      -a                                     Mark certificate as auto renewable.
      --auto-renew                           The "housekeeping" command will take care of this
@@ -540,8 +540,9 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
      --basic-constraint=critical:]<data>    flag on the basic constraints, e.g. -b critical:CA:TRUE,pathlen:1 for
                                             a CA certificate with a maximal path length of 1.
 
-     -k [critical:]<flags>                  Comma separated list of keyUsage bits. Prefix critical: can be used to set
-     --keyusage=[critical:]<flags>          the critical flag. Known keyUsage bits according to RFC 5280 are:
+     -k <flags>                             Comma separated list of keyUsage bits. As defined in RFC 5280, Section 4.2.1.3
+     --keyusage=<flags>                     the critical flag is always true.
+                                            Known keyUsage bits according to RFC 5280 are:
                                             digitalSignature, nonRepudiation (or contentCommitment), keyEncipherment,
                                             dataEncipherment, keyAgreement, keyCertSign, cRLSign, encipherOnly,
                                             decipherOnly (see RFC 5280, Section 4.2.1.3 "Key Usage" for futher details).

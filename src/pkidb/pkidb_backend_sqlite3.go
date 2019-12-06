@@ -256,9 +256,9 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		defer ins.Close()
 
 		if cert.DummySubject == "" {
-			_, err = ins.Exec(sn, 3, state, DummyCertificateSubject)
+			_, err = ins.Exec(sn, 0, state, DummyCertificateSubject)
 		} else {
-			_, err = ins.Exec(sn, 3, state, cert.DummySubject)
+			_, err = ins.Exec(sn, 0, state, cert.DummySubject)
 		}
 		if err != nil {
 			tx.Rollback()
@@ -1409,4 +1409,75 @@ func (db PKIDBBackendSQLite3) GetSerialNumbersByState(cfg *PKIConfiguration, sta
 	}
 
 	return results, nil
+}
+
+// LockSerialNumber - lock serial number in databse
+func (db PKIDBBackendSQLite3) LockSerialNumber(cfg *PKIConfiguration, serial *big.Int, state int, force bool) error {
+	var _sn string
+
+	sn := serial.Text(10)
+
+	_, found := PKIReversStatusMap[state]
+	if !found && state != ListAllSerialNumbers {
+		return fmt.Errorf("Invalid state %d", state)
+	}
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return err
+	}
+
+	// XXX: A much more elegant way would be INSERT INTO ... ON CONFLICT DO ... but this requires SQLite3 >= 3.24.0 (see https://www.sqlite.org/lang_UPSERT.html).
+	//      Sadly current enterprise distributions like Redhat Enterprise Linux 7 doesn't ship with this version (at least RHEL 8 would).
+	//      So instead of bundling (and maintaining) our own SQLitee3 package we fallback to the old behavior.
+	search, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer search.Close()
+
+	err = search.QueryRow(sn).Scan(&_sn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ins, err := tx.Prepare("INSERT INTO certificate (serial_number, subject, certificate, version, state) VALUES (?, ?, ?, ?, ?);")
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			defer ins.Close()
+
+			lockMsg := fmt.Sprintf("Locked serial number %s", sn)
+			_, err = ins.Exec(sn, lockMsg, lockMsg, 0, state)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			tx.Commit()
+			return nil
+		}
+		tx.Rollback()
+		return err
+	}
+
+	if force {
+		upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE serial_number=?")
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		defer upd.Close()
+
+		_, err = upd.Exec(state, sn)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		tx.Commit()
+		return nil
+	}
+
+	return fmt.Errorf("Serial number %s already present in the database", sn)
 }
