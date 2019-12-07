@@ -29,6 +29,7 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	var startIn = argParse.Int("start-in", 0, "Validity of the new certificate starts in startin days")
 	var template = argParse.String("template", "", "Use a template file for certificate signing")
 	var validFor = argParse.Int("valid-for", 0, "New certificate will be valid for validfor days")
+	argParse.Usage = showHelpSign
 	argParse.Parse(args)
 
 	if cfg.Global.CaPublicKey == "" || cfg.Global.CaPrivateKey == "" {

@@ -18,6 +18,7 @@ func CmdSearch(cfg *PKIConfiguration, args []string) error {
 
 	argParse := flag.NewFlagSet("cmd-search", flag.ExitOnError)
 	var output = argParse.String("output", "", "Write certificate information to <output> instead of standard output")
+	argParse.Usage = showHelpSearch
 	argParse.Parse(args)
 
 	cmdSearchTrailing := argParse.Args()

@@ -13,7 +13,5 @@ func showVersion() {
 		"%s is distributed under the Terms of the GNU General\n"+
 		"Public License Version 3. (http://www.gnu.org/copyleft/gpl.html)\n"+
 		"\n"+
-		"Build with go version: %s\n"+
-		"\n", name, version, name, runtime.Version())
-
+		"Build with go version: %s\n\n", name, version, name, runtime.Version())
 }

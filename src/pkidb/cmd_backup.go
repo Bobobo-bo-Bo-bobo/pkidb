@@ -14,6 +14,7 @@ func CmdBackup(cfg *PKIConfiguration, args []string) error {
 
 	argParse := flag.NewFlagSet("cmd-backup", flag.ExitOnError)
 	var output = argParse.String("output", "", "Write backup to <output> instead of standard output")
+	argParse.Usage = showHelpBackup
 	argParse.Parse(args)
 
 	cmdBackupTrailing := argParse.Args()

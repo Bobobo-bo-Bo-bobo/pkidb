@@ -22,6 +22,7 @@ func CmdExport(cfg *PKIConfiguration, args []string) error {
 
 	argParse := flag.NewFlagSet("cmd-export", flag.ExitOnError)
 	var output = argParse.String("output", "", "Write certificate information to <output> instead of standard output")
+	argParse.Usage = showHelpExport
 	argParse.Parse(args)
 
 	cmdExportTrailing := argParse.Args()

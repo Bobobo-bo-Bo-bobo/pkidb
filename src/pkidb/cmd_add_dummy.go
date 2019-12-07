@@ -25,6 +25,7 @@ func CmdAddDummy(cfg *PKIConfiguration, args []string) error {
 	var subject = argParse.String("subject", "", "Certificate subject")
 	var start = argParse.String("start", "", "Start of the certificates validity period")
 	var end = argParse.String("end", "", "End of the certificates validity period")
+	argParse.Usage = showHelpAddDummy
 	argParse.Parse(args)
 
 	cmdAddDummyTrailing := argParse.Args()

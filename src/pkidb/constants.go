@@ -311,23 +311,8 @@ var PKIReversStatusMap = map[int]string{
 	5:  "dummy",
 }
 
-// HelpText - Help text
-const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<commandoptions>]
-
-  -V                                        Shows version.
-  --version
-
-  -c <cfg>                                  Use configuration file instead of the default
-  --config=<cfg>                            Default: %s
-
-  -s <site>                                 Use configuration for <site>
-  --site=<site>                             Default: Use global configuration or default site (if set and not empty)
-
-  -h                                        This text
-  --help
-
-  Commands:
-
+// HelpTextAddDummy - help text for add-dummy
+const HelpTextAddDummy = `
    add-dummy                                Add a dummy certificate identified by the serial number.
                                             If the serial number is not given on the command line it will be
                                             read from standard input.
@@ -345,7 +330,10 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
      -e <end>                               End of the certificates validity period.
      --end=<end>                            <end> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
                                             string in the format YYYYMMDDhhmmssZ
+`
 
+// HelpTextBackup - help text for backup
+const HelpTextBackup = `
    backup                                   Dumps the content of the backend database in JSON format.
                                             This can be used to backup the PKI database and is the only
                                             supported way to migrate between different backend types.
@@ -354,11 +342,17 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
 
      -o <output>                            Write database dump to <output> instead of standard out.
      --output=<output>
+`
 
+// HelpTextDelete - help text for delete
+const HelpTextDelete = `
    delete                                   Deletes a certificate identified by the serial number.
                                             If the serial number is not given on the command line it will be
                                             read from standard input.
+`
 
+// HelpTextExport - help text for export
+const HelpTextExport = `
    export                                   Dumps base64 encoded X509 data of a certificate (aka PEM format).
                                             The serial number of the certificate must be given.
                                             If not given it will be read from the standard input.
@@ -367,19 +361,28 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
 
      -o <output>                            Write certificate to <output> instead of standard out.
      --output=<output>
+`
 
+// HelpTextGenCRL - help text for gencrl
+const HelpTextGenCRL = `
    gencrl                                   Generate certificate revocation list containing information about revoked
                                             certificates. The certificate revocation list will be written to standard
                                             output or to a file if -o is used.
 
      -o <output>                            Write revocation list to <output> instead of standard output.
      --output=<output>
+`
 
+// HelpTextHealthcheck - help text for healthcheck
+const HelpTextHealthcheck = `
    healthcheck                              Verify integrity of the stored certifiate data.
 
    -f                                       Fix errors. Stored data will be replaced with data from the certifiate
    --fix                                    stored in the database.
+`
 
+// HelpTextHousekeeping - help text for housekeeping
+const HelpTextHousekeeping = `
    housekeeping                             General "housekeeping". Checking all certificates in the database
                                             for expiration, renew auto renewable certificates (if option -a is used).
                                             This should be run at regular intervals.
@@ -389,7 +392,10 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
 
      -p <period>                            New validity period for auto renewed certificate.
      --period=<period>                      Default is the value given on import that has been stored in the backend.
+`
 
+// HelpTextImport - help text for import
+const HelpTextImport = `
    import                                   Import a certificate. If a file name is given it will be read
                                             from the file, otherwise it will be read from standard input.
 
@@ -412,7 +418,10 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
                                             unspecified, keyCompromise, CACompromise, affiliationChanged,
                                             superseded, cessationOfOperation, certificateHold, privilegeWithdrawn,
                                             removeFromCRL, aACompromise
+`
 
+// HelpTextList - help text for list
+const HelpTextList = `
    list                                     List serial numbers of certificates.
                                             The list will be written to standard out if the option -o is not used.
 
@@ -439,7 +448,10 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
      --valid                                A certificates is considered valid if it is not temporary, not revoked,
                                             the validity period (notBefore .. notAfter) has started and the
                                             certificates is not expired.
+`
 
+// HelpTextRenew - help text for renew
+const HelpTextRenew = `
    renew                                    Renew a cerificate. The serial number of the certificate must be given.
                                             If not given it will be read from the standard input.
                                             The new certificate will be written to standard output or to a file if
@@ -450,11 +462,17 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
 
      -p <period>                            New validity period for renewed certificate.
      --period=<period>                      Default <validity_period> from configuration file.
+`
 
+// HelpTextRestore - help text for restore
+const HelpTextRestore = `
    restore                                  Restores database from a JSON file generated with the backup command.
                                             If the filename of the input data is given on the command line it
-                                            will be read, otherwise input will be read from standard input
+                                            will be read, otherwise input will be read from standard input.
+`
 
+// HelpTextRevoke - help text for revoke
+const HelpTextRevoke = `
    revoke                                   Revoke a certificate. Serial number of the certificate to revoke must
                                             be used. If not given on the command line it will be read from
                                             stdin.
@@ -474,12 +492,18 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
      --revocation-date=<date>               <revdate> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
                                             string in the format YYYYMMDDhhmmssZ.
                                             If not given, the current date will be used.
+`
 
+// HelpTextSearch - help text for search
+const HelpTextSearch = `
    search                                   Search certificate subject for a given string. Search string can be given
                                             on the command line. If omitted it will be read from standard input.
                                             SQL wildcards like %% can be used. The serial numbers matching the search
                                             will be printed to standard output.
+`
 
+// HelpTextSet - help text for set
+const HelpTextSet = `
    set                                      Modify meta data of a certificate identified by the serial number.
                                             The serial number of the certificate must be given on the command line or
                                             will be read from the standard input.
@@ -499,7 +523,10 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
 
      -c <signing_request>                   Set certificate signing request.
      --csr=<signing_request>
+`
 
+// HelpTextShow - help text for show
+const HelpTextShow = `
    show                                     Shows information of a certificate identified by the serial number.
                                             The serial number of the certificate must be given on the command line or
                                             will be read from the standard input.
@@ -508,7 +535,10 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
 
      -o <output>                            Write new certificate information to <output> instead of standard output.
      --output=<output>
+`
 
+// HelpTextSign - help text for sign
+const HelpTextSign = `
    sign                                     Sign a certificate signing request. If a file name is given it will be
                                             read, otherwise it will be read from stdin. Output will be written to
                                             stdout or to a file if -o option is used.
@@ -566,7 +596,49 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
      -v <validfor>                          New certificate will be valid for validfor days.
      --valid-for=<validfor>                 Default ist the defined validity_period in the configuration or the
                                             template file.
+`
 
+// HelpTextStatistics - help text for statistics
+const HelpTextStatistics = `
    statistics                               Print small summary of stored certificates. Output will be written to
                                             stdout.
+`
+
+// HelpTextMap - map command to help text
+var HelpTextMap = map[string]string{
+	"add-dummy":    HelpTextAddDummy,
+	"backup":       HelpTextBackup,
+	"delete":       HelpTextDelete,
+	"export":       HelpTextExport,
+	"gencrl":       HelpTextGenCRL,
+	"healthcheck":  HelpTextHealthcheck,
+	"housekeeping": HelpTextHousekeeping,
+	"import":       HelpTextImport,
+	"list":         HelpTextList,
+	"renew":        HelpTextRenew,
+	"restore":      HelpTextRestore,
+	"revoke":       HelpTextRevoke,
+	"search":       HelpTextSearch,
+	"set":          HelpTextSet,
+	"show":         HelpTextShow,
+	"sign":         HelpTextSign,
+	"statistics":   HelpTextStatistics,
+}
+
+// HelpText - Help text
+const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<commandoptions>]
+
+  -V                                        Shows version.
+  --version
+
+  -c <cfg>                                  Use configuration file instead of the default
+  --config=<cfg>                            Default: %s
+
+  -s <site>                                 Use configuration for <site>
+  --site=<site>                             Default: Use global configuration or default site (if set and not empty)
+
+  -h                                        This text
+  --help
+
+  Commands:
 `

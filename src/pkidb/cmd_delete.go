@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -14,6 +15,10 @@ func CmdDelete(cfg *PKIConfiguration, args []string) error {
 	var splitted []string
 	var serial *big.Int
 	var err error
+
+	argParse := flag.NewFlagSet("cmd-delte", flag.ExitOnError)
+	argParse.Usage = showHelpDelete
+	argParse.Parse(args)
 
 	if len(args) == 0 {
 		raw, err := ioutil.ReadAll(os.Stdin)

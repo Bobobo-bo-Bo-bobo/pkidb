@@ -21,6 +21,7 @@ func CmdShow(cfg *PKIConfiguration, args []string) error {
 
 	argParse := flag.NewFlagSet("cmd-show", flag.ExitOnError)
 	var output = argParse.String("output", "", "Write certificate information to <output> instead of standard output")
+	argParse.Usage = showHelpShow
 	argParse.Parse(args)
 
 	cmdShowTrailing := argParse.Args()

@@ -22,6 +22,7 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 	var force = argParse.Bool("force", false, "Revoke certificate by it's serial number event it is not present in the database")
 	var reason = argParse.String("reason", "unspecified", "Set revocation reason for certificate")
 	var rdate = argParse.String("revocation-date", "", "Set revocation date for certificate")
+	argParse.Usage = showHelpRevoke
 	argParse.Parse(args)
 
 	cmdImportTrailing := argParse.Args()

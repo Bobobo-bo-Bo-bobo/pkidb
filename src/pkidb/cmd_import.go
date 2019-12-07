@@ -24,6 +24,7 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 	var delta = argParse.Int("delta", 0, "For auto renewable certificates the auto renew process starts if the time til expiration is less than <delta_period> days")
 	var period = argParse.Int("period", 0, "New validity period for auto renewed certificate")
 	var revoked = argParse.String("revoked", "", "Mark certificate as revoked")
+	argParse.Usage = showHelpImport
 	argParse.Parse(args)
 
 	cmdImportTrailing := argParse.Args()

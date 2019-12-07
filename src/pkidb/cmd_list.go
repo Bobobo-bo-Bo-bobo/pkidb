@@ -19,6 +19,7 @@ func CmdList(cfg *PKIConfiguration, args []string) error {
 	var revoked = argParse.Bool("revoked", false, "List serial numbers of revoked certificates")
 	var temporary = argParse.Bool("temporary", false, "List \"certificates\" marked as temporary")
 	var valid = argParse.Bool("valid", false, "List serial numbers of valid certificates")
+	argParse.Usage = showHelpList
 	argParse.Parse(args)
 
 	cmdListTrailing := argParse.Args()
