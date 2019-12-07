@@ -55,14 +55,13 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	}
 	sr.CSRData = csrData
 
-	// TODO
 	if *extensions != "" {
 		sr.Extension = make([]X509ExtensionData, 0)
 		for _, ext := range strings.Split(*extensions, ",") {
 			e := X509ExtensionData{}
 
 			rawExt := strings.Split(ext, ":")
-			if len(rawExt) != 5 {
+			if len(rawExt) != 3 {
 				return fmt.Errorf("Invalid extension data")
 			}
 
@@ -350,6 +349,15 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 		} else {
 			certTemplate.ExtKeyUsage = append(certTemplate.ExtKeyUsage, ekeyusage)
 		}
+	}
+
+	// build X509 extensions
+	for _, ext := range sr.Extension {
+		pkixext, err := BuildX509Extension(ext)
+		if err != nil {
+			return nil, err
+		}
+		certTemplate.ExtraExtensions = append(certTemplate.ExtraExtensions, pkixext)
 	}
 
 	newCert, err := x509.CreateCertificate(rand.Reader, &certTemplate, cfg.CAPublicKey, sr.CSRData.PublicKey, cfg.CACertificate.PrivateKey)
