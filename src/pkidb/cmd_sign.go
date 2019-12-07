@@ -56,6 +56,9 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	}
 	sr.CSRData = csrData
 
+    if *template != "" {
+    }
+
 	if *extensions != "" {
 		sr.Extension = make([]X509ExtensionData, 0)
 		for _, ext := range strings.Split(*extensions, ",") {
@@ -150,12 +153,7 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		sr.NotBefore = time.Now()
 	}
 
-	// TODO
 	validityPeriod = cfg.Global.ValidityPeriod
-	if *template != "" {
-	}
-
-	// TODO
 	if *validFor != 0 {
 		if *validFor < 0 {
 			return fmt.Errorf("Validity period can't be negative")
@@ -168,20 +166,6 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	sr.NotAfter = sr.NotBefore.Add(time.Duration(24) * time.Duration(validityPeriod) * time.Hour)
 
 	newCert, err := signRequest(cfg, &sr)
-	if err != nil {
-		return err
-	}
-
-	if *output != "" {
-		fd, err = os.Create(*output)
-		if err != nil {
-			return err
-		}
-	} else {
-		fd = os.Stdout
-	}
-
-	err = pem.Encode(fd, &pem.Block{Type: "CERTIFICATE", Bytes: newCert})
 	if err != nil {
 		return err
 	}
@@ -215,6 +199,20 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if *output != "" {
+		fd, err = os.Create(*output)
+		if err != nil {
+			return err
+		}
+	} else {
+		fd = os.Stdout
+	}
+
+	err = pem.Encode(fd, &pem.Block{Type: "CERTIFICATE", Bytes: newCert})
+	if err != nil {
+		return err
 	}
 
 	if *output != "" {

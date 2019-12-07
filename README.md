@@ -1,5 +1,8 @@
 ----
 # Changes from `python-pkidb`
+## Getopt short options are no longer supported
+Due to the switch Go! the command-line parsing changes to standard Go! behavior and as a consequence getopt short options are no longer supported.
+
 ## Basic constraints
 [RFC 5280 - Section 4.2.1.9](https://tools.ietf.org/html/rfc5280#section-4.2.1.9) only defines two basic constraints - `CA` and `pathlen` - and doesn't define the criticality of the basic constraints. As a consequence the critical flag has been removed for basic constraints and basic constraints are limited to `CA` and `pathlen`.
 
