@@ -202,3 +202,11 @@ type JSONSigningRequest struct {
 	Request string `json:"request"`
 	Hash    string `json:"hash"`
 }
+
+// TemplateConfig - template parsing
+type TemplateConfig struct {
+	Global           GlobalConfiguration
+	Extension        []X509ExtensionData
+	KeyUsage         []X509KeyUsageData
+	ExtendedKeyUsage []X509ExtendedKeyUsageData
+}
