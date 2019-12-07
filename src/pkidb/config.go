@@ -31,7 +31,7 @@ type GlobalConfiguration struct {
 	CrlPublicKey         string `ini:"crl_public_key"`
 	CrlPrivateKey        string `ini:"crl_private_key"`
 	CrlPassphrase        string `ini:"crl_passphrase"`
-	CrlValidtyPeriod     string `ini:"crl_validity_period"`
+	CrlValidtyPeriod     int    `ini:"crl_validity_period"`
 	CrlDigest            string `ini:"crl_digest"`
 	ListAsHex            bool   `ini:"list_as_hex"`
 	Backend              string `ini:"backend"`
@@ -209,4 +209,21 @@ type TemplateConfig struct {
 	Extension        []X509ExtensionData
 	KeyUsage         []X509KeyUsageData
 	ExtendedKeyUsage []X509ExtendedKeyUsageData
+}
+
+// TemplateKeyUsage - keyusage from template
+type TemplateKeyUsage struct {
+	Data string `ini:"data"`
+}
+
+// TemplateExtendedKeyUsage - extended keyusage from template
+type TemplateExtendedKeyUsage struct {
+	Data string `ini:"data"`
+}
+
+// TemplateExtension - Extension configuration in templates
+type TemplateExtension struct {
+	Critical   bool   `ini:"critical"`
+	Data       string `ini:"data"`
+	DataBase64 string `ini:"data:base64"`
 }

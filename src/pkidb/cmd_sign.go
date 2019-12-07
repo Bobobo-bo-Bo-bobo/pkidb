@@ -51,6 +51,40 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	sr.CSRData = csrData
 
 	if *template != "" {
+		templateContent, err := ParseTemplateFile(*template)
+		if err != nil {
+			return err
+		}
+
+		if len(templateContent.Extension) != 0 {
+			sr.Extension = templateContent.Extension
+		}
+
+		if len(templateContent.KeyUsage) != 0 {
+			sr.KeyUsage = templateContent.KeyUsage
+		}
+
+		if len(templateContent.ExtendedKeyUsage) != 0 {
+			sr.ExtendedKeyUsage = templateContent.ExtendedKeyUsage
+		}
+
+		// Note: We don't "chain" commands in a single call, so it is o.k. to simply replace
+		//       the values in the PKIConfiguration structure. We exit when we are done.
+		if templateContent.Global.Digest != "" {
+			cfg.Global.Digest = templateContent.Global.Digest
+		}
+		if templateContent.Global.ValidityPeriod != 0 {
+			cfg.Global.ValidityPeriod = templateContent.Global.ValidityPeriod
+		}
+		if templateContent.Global.AutoRenewStartPeriod != 0 {
+			cfg.Global.AutoRenewStartPeriod = templateContent.Global.AutoRenewStartPeriod
+		}
+		if templateContent.Global.CrlValidtyPeriod != 0 {
+			cfg.Global.CrlValidtyPeriod = templateContent.Global.CrlValidtyPeriod
+		}
+		if templateContent.Global.CrlDigest != "" {
+			cfg.Global.CrlDigest = templateContent.Global.CrlDigest
+		}
 	}
 
 	if *extensions != "" {
