@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -95,7 +96,6 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		}
 	}
 
-	// subjectAlternateName
 	if *san != "" {
 		sr.SAN = make([]X509SubjectAlternateNameData, 0)
 		for _, san := range strings.Split(*san, ",") {
@@ -115,30 +115,18 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		sr.AutoRenew = true
 	}
 
-	// TODO
 	if *basicConstraint != "" {
-		sr.BasicConstratint = make([]X509BasicConstraintData, 0)
+		sr.BasicConstraint = make([]X509BasicConstraintData, 0)
 		for _, bcd := range strings.Split(*basicConstraint, ",") {
 			_bcd := X509BasicConstraintData{}
 			rawBcd := strings.Split(bcd, ":")
 			if len(rawBcd) == 2 {
-				_bcd.Critical = false
 				_bcd.Type = rawBcd[0]
 				_bcd.Value = rawBcd[1]
-			} else if len(rawBcd) == 3 {
-				if rawBcd[0] == "" || rawBcd[1] == "0" {
-					_bcd.Critical = false
-				} else if rawBcd[0] == "1" {
-					_bcd.Critical = true
-				} else {
-					return fmt.Errorf("Invalid basic constraint data")
-				}
-				_bcd.Type = rawBcd[1]
-				_bcd.Value = rawBcd[2]
 			} else {
 				return fmt.Errorf("Invalid basic constraint data")
 			}
-			sr.BasicConstratint = append(sr.BasicConstratint, _bcd)
+			sr.BasicConstraint = append(sr.BasicConstraint, _bcd)
 		}
 	}
 
@@ -359,6 +347,74 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 		}
 		certTemplate.ExtraExtensions = append(certTemplate.ExtraExtensions, pkixext)
 	}
+
+	// process basic constraints
+	for _, bc := range sr.BasicConstraint {
+		switch strings.ToLower(bc.Type) {
+		case "ca":
+			switch strings.ToLower(bc.Value) {
+			case "true":
+				certTemplate.IsCA = true
+			case "false":
+				certTemplate.IsCA = false
+			default:
+				// remove locked serial number from the database
+				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
+				if err != nil {
+					return nil, err
+				}
+				return nil, fmt.Errorf("Basic constraint CA is a boolean and only accepts true or false as value")
+			}
+		case "pathlen":
+			pl, err := strconv.Atoi(bc.Value)
+			if err != nil {
+				// remove locked serial number from the database
+				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
+				if err != nil {
+					return nil, err
+				}
+				return nil, fmt.Errorf("Can't convert %s to an integer", bc.Value)
+			}
+			if pl < 0 {
+				// remove locked serial number from the database
+				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
+				if err != nil {
+					return nil, err
+				}
+				return nil, fmt.Errorf("Pathlen can't be negative")
+			}
+
+			certTemplate.MaxPathLen = pl
+			if pl == 0 {
+				certTemplate.MaxPathLenZero = true
+			}
+		default:
+			// remove locked serial number from the database
+			err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
+			if err != nil {
+				return nil, err
+			}
+			return nil, fmt.Errorf("Invalid basic constraint %s", bc.Type)
+		}
+	}
+	/*
+	   RFC 5280 dictates:
+	       "CAs MUST NOT include the pathLenConstraint field unless the cA
+	       boolean is asserted and the key usage extension asserts the
+	       keyCertSign bit."
+	*/
+	if !certTemplate.IsCA || !(certTemplate.KeyUsage&x509.KeyUsageCertSign == x509.KeyUsageCertSign) {
+		if certTemplate.MaxPathLen > 0 || (certTemplate.MaxPathLen == 0 && certTemplate.MaxPathLenZero) {
+			// remove locked serial number from the database
+			err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, fmt.Errorf("Can't set pathlen constraint. CA constraint must be set and key usage must include keyCertSign")
+		}
+	}
+	certTemplate.BasicConstraintsValid = true
 
 	newCert, err := x509.CreateCertificate(rand.Reader, &certTemplate, cfg.CAPublicKey, sr.CSRData.PublicKey, cfg.CACertificate.PrivateKey)
 	if err != nil {

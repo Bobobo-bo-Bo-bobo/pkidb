@@ -81,9 +81,8 @@ type X509SubjectAlternateNameData struct {
 
 // X509BasicConstraintData - X509 basic constraints
 type X509BasicConstraintData struct {
-	Critical bool
-	Type     string
-	Value    string
+	Type  string
+	Value string
 }
 
 // X509KeyUsageData - X509 key usage
@@ -98,7 +97,7 @@ type SigningRequest struct {
 	Extension        []X509ExtensionData
 	ExtendedKeyUsage []X509ExtendedKeyUsageData
 	SAN              []X509SubjectAlternateNameData
-	BasicConstratint []X509BasicConstraintData
+	BasicConstraint  []X509BasicConstraintData
 	KeyUsage         []X509KeyUsageData
 	NoRegistration   bool
 	NotBefore        time.Time

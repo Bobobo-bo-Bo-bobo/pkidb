@@ -526,19 +526,21 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
                                             msCodeInd, msCodeCom, msCTLSign, msSGC, nsSGC
 
 
-     -S <san>								Comma separated list of subjectAltName extensions. Format of <san>
-	--san <san>								is <type>:<value>. Supported <type> values are:
-												DNS   - DNS domain name
-												email - email address
-												IP    - IP address (IPv4 and IPv6)
-												URI   - URI
+     -S <san>                                Comma separated list of subjectAltName extensions. Format of <san>
+    --san <san>                                is <type>:<value>. Supported <type> values are:
+                                                DNS   - DNS domain name
+                                                email - email address
+                                                IP    - IP address (IPv4 and IPv6)
+                                                URI   - URI
 
      -a                                     Mark certificate as auto renewable.
      --auto-renew                           The "housekeeping" command will take care of this
 
-     -b critical:<data>                     Set basic constraints Prefix critical: can be used to set the critical
-     --basic-constraint=critical:]<data>    flag on the basic constraints, e.g. -b critical:CA:TRUE,pathlen:1 for
+     -b <data>                              Set basic constraints. Only CA and pathlen are supported (see RFC 5280, Section 4.2.1.9)
+     --basic-constraint=<data>              flag on the basic constraints, e.g. -b CA:TRUE,pathlen:1 for
                                             a CA certificate with a maximal path length of 1.
+                                            Note: In accordance with RFC 5280 pathlen constraint can only be set if CA constraint is set
+                                            and keyusage includes keyCertSign.
 
      -k <flags>                             Comma separated list of keyUsage bits. As defined in RFC 5280, Section 4.2.1.3
      --keyusage=<flags>                     the critical flag is always true.
