@@ -1495,7 +1495,7 @@ func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]R
 		return nil, err
 	}
 
-	search, err := tx.Prepare("SELECT serial_number, revocation_date, revocation_reason FROM certificate WHERE state=?")
+	search, err := tx.Prepare("SELECT serial_number, revocation_date, revocation_reason FROM certificate WHERE state=?;")
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -1556,4 +1556,42 @@ func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]R
 
 	return result, err
 
+}
+
+// GetCertificate - get certificate as ASN1 DER data
+func (db PKIDBBackendSQLite3) GetCertificate(cfg *PKIConfiguration, serial *big.Int) ([]byte, error) {
+	var cert string
+
+	sn := serial.Text(10)
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	search, err := tx.Prepare("SELECT certificate FROM certificate WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer search.Close()
+
+	err = search.QueryRow(sn).Scan(&cert)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Commit()
+			return nil, nil
+		}
+		tx.Rollback()
+		return nil, err
+	}
+
+	tx.Commit()
+
+	data, err := base64.StdEncoding.DecodeString(cert)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

@@ -25,8 +25,8 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 	argParse.Usage = showHelpRevoke
 	argParse.Parse(args)
 
-	cmdImportTrailing := argParse.Args()
-	if len(cmdImportTrailing) == 0 {
+	cmdRevokeTrailing := argParse.Args()
+	if len(cmdRevokeTrailing) == 0 {
 		raw, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			return err
@@ -38,7 +38,7 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 
 		splitted = strings.Split(rawstr, " ")
 	} else {
-		splitted = cmdImportTrailing
+		splitted = cmdRevokeTrailing
 	}
 
 	for _, v := range splitted {
