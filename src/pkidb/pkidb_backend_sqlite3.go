@@ -1481,3 +1481,79 @@ func (db PKIDBBackendSQLite3) LockSerialNumber(cfg *PKIConfiguration, serial *bi
 
 	return fmt.Errorf("Serial number %s already present in the database", sn)
 }
+
+// GetRevokedCertificates - get revoked certificates
+func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]RevokeRequest, error) {
+	var result = make([]RevokeRequest, 0)
+	var sn string
+	var rdatestr *string
+	var rdate time.Time
+	var rreason int
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	search, err := tx.Prepare("SELECT serial_number, revocation_date, revocation_reason FROM certificate WHERE state=?")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer search.Close()
+
+	srows, err := search.Query(PKICertificateStatusRevoked)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	for srows.Next() {
+		err = srows.Scan(&sn, &rdatestr, &rreason)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		serial := big.NewInt(0)
+		serial, ok := serial.SetString(sn, 10)
+		if !ok {
+			tx.Rollback()
+			return nil, fmt.Errorf("Can't convert serial number %s to big integer", sn)
+		}
+
+		if rdatestr == nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("Missing revocation date in revoked certificate %s", serial)
+		}
+
+		rdate, err = time.Parse(SQLite3TimeFormat, *rdatestr)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		reason, found := RevocationReasonReverseMap[rreason]
+		if !found {
+			tx.Rollback()
+			return nil, fmt.Errorf("Invalid revocation reason %d", rreason)
+		}
+
+		rr := RevokeRequest{
+			SerialNumber: serial,
+			Time:         rdate,
+			Reason:       reason,
+		}
+
+		result = append(result, rr)
+	}
+	err = srows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	tx.Commit()
+
+	return result, err
+
+}

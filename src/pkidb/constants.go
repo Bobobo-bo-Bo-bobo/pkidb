@@ -6,7 +6,7 @@ import (
 )
 
 const name = "pkidb"
-const version = "1.0.0-2019.12.07"
+const version = "1.0.0-2019.12.08"
 
 // DummyCertificateSubject - subject for dummy entry
 const DummyCertificateSubject = "dummy entry"
@@ -107,7 +107,10 @@ var OIDMap = map[string]string{
 	"2.5.29.69": "id-ce-holderNameConstraints",
 }
 
-// RevocationReasonMap - map revocation reason to db values
+// OIDCRLReason - OID for CRLReason - see RFC 5280, Section 5.3.1 - Reason Code
+const OIDCRLReason = "2.5.29.21"
+
+// RevocationReasonMap - map revocation reason to db values which are the same as CRLReason values as defined in RFC 5280, Section 5.3.1 - Reason Code
 var RevocationReasonMap = map[string]int{
 	"unspecified":          0,
 	"keycompromise":        1,

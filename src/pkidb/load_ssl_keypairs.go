@@ -31,13 +31,13 @@ func LoadSSLKeyPairs(cfg *PKIConfiguration) error {
 
 	if cfg.Global.CrlPublicKey != "" && cfg.Global.CrlPrivateKey != "" {
 		pub, priv, err := ReadEncryptedKeyPair(cfg.Global.CrlPublicKey, cfg.Global.CrlPrivateKey, cfg.Global.CrlPassphrase)
-		cacert, err := tls.X509KeyPair(pub, priv)
+		crlcert, err := tls.X509KeyPair(pub, priv)
 		if err != nil {
 			return err
 		}
-		cfg.CRLCertificate = &cacert
-		caPub, _ := pem.Decode(pub)
-		cfg.CRLPublicKey, err = x509.ParseCertificate(caPub.Bytes)
+		cfg.CRLCertificate = &crlcert
+		crlPub, _ := pem.Decode(pub)
+		cfg.CRLPublicKey, err = x509.ParseCertificate(crlPub.Bytes)
 		if err != nil {
 			return err
 		}

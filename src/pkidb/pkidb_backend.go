@@ -33,4 +33,5 @@ type PKIDBBackend interface {
 	BackupToJSON(*PKIConfiguration) (*JSONInOutput, error)
 	GetSerialNumbersByState(*PKIConfiguration, int) ([]*big.Int, error)
 	LockSerialNumber(*PKIConfiguration, *big.Int, int, bool) error
+	GetRevokedCertificates(*PKIConfiguration) ([]RevokeRequest, error)
 }

@@ -22,6 +22,9 @@ Hence the option to set the criticality flag of the keyusage flags has been remo
 
 The extended key usage flag `any` has been added.
 
+## Signing algorithm for certificate revocation list is ignored
+The generation function for certificate revocation list ([x509.Certitifate.CreateCRL](https://golang.org/pkg/crypto/x509/#Certificate.CreateCRL)) always use SHA256. This is hardcoded in the function and can't be changed, so the value for `crl_digest` will be ignored.
+
 # Migration from `python-pkidb`
 ## Encrypted private keys
 Due to the inability of Golang to handle encryptes private SSL keys (see [crypto/tls: needs a convenience function for reading encrypted keys](https://github.com/golang/go/issues/6722))
