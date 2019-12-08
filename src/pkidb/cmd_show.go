@@ -53,7 +53,7 @@ func CmdShow(cfg *PKIConfiguration, args []string) error {
 			return fmt.Errorf("Invalid serial number %s", sn)
 		}
 
-		ci, err := cfg.DBBackend.CertificateInformation(cfg, serial)
+		ci, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
 		if err != nil {
 			return err
 		}

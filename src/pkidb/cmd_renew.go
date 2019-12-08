@@ -1,7 +1,8 @@
 package main
 
 import (
-    "crypto/x509"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -20,6 +21,7 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 	var serial *big.Int
 	var newEnd time.Time
 	var fd *os.File
+	var oldCSR *x509.CertificateRequest
 
 	argParse := flag.NewFlagSet("cmd-renew", flag.ExitOnError)
 	var output = argParse.String("output", "", "Write new certificate to <output> instead of standard out")
@@ -80,12 +82,43 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 		}
 
 		// This should never fail ...
-		_, err = x509.ParseCertificate(raw)
+		ncert, err := x509.ParseCertificate(raw)
 		if err != nil {
 			return err
 		}
 
-        // TODO: Update certificate data in database ... StoreCertificate
+		// Update certificate data in database ...
+		// get known ceritificate information from database
+		certinfo, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
+		if err != nil {
+			return err
+		}
+
+		if certinfo.CSR != "" {
+			rawCSR, err := base64.StdEncoding.DecodeString(certinfo.CSR)
+			if err != nil {
+				return err
+			}
+
+			oldCSR, err = x509.ParseCertificateRequest(rawCSR)
+			if err != nil {
+				return err
+			}
+		} else {
+			oldCSR = nil
+		}
+
+		// create import struct
+		imp := &ImportCertificate{
+			Certificate: ncert,
+			AutoRenew:   certinfo.AutoRenewable,
+			Revoked:     certinfo.Revoked,
+			CSR:         oldCSR,
+		}
+		err = cfg.DBBackend.StoreCertificate(cfg, imp, true)
+		if err != nil {
+			return err
+		}
 
 		err = pem.Encode(fd, &pem.Block{Type: "CERTIFICATE", Bytes: raw})
 		if err != nil {

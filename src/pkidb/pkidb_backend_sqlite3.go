@@ -699,8 +699,8 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 	return nil
 }
 
-// CertificateInformation - get certificate information
-func (db PKIDBBackendSQLite3) CertificateInformation(cfg *PKIConfiguration, serial *big.Int) (*CertificateInformation, error) {
+// GetCertificateInformation - get certificate information
+func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, serial *big.Int) (*CertificateInformation, error) {
 	var version int
 	var sd *string
 	var startDate time.Time
