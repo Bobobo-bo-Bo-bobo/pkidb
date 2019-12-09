@@ -24,7 +24,7 @@ func CmdGenCRL(cfg *PKIConfiguration, args []string) error {
 
 	crl, err := GenerateCRL(cfg)
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return err
 	}
 
 	if *output != "" {

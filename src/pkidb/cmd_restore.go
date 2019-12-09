@@ -38,7 +38,7 @@ func CmdRestore(cfg *PKIConfiguration, args []string) error {
 
 	err = cfg.DBBackend.RestoreFromJSON(cfg, &restore)
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return err
 	}
 
 	return nil

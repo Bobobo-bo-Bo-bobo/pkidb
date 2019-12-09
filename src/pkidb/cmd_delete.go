@@ -50,7 +50,7 @@ func CmdDelete(cfg *PKIConfiguration, args []string) error {
 
 		err = cfg.DBBackend.DeleteCertificate(cfg, serial)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 

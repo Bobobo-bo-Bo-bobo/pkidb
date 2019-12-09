@@ -91,21 +91,21 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	if *extensions != "" {
 		sr.Extension, err = ParseExtensionString(*extensions)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 
 	if *extendedKeyUsage != "" {
 		sr.ExtendedKeyUsage, err = ParseExtendedKeyUsageString(*extendedKeyUsage)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 
 	if *san != "" {
 		sr.SAN, err = ParseSANString(*san)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 	if *autoRenew {
@@ -115,14 +115,14 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	if *basicConstraint != "" {
 		sr.BasicConstraint, err = ParseBasicConstraintString(*basicConstraint)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 
 	if *keyUsage != "" {
 		sr.KeyUsage, err = ParseKeyUsageString(*keyUsage)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 
@@ -150,7 +150,7 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 
 	newCert, err := signRequest(cfg, &sr)
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return err
 	}
 
 	// This should never fail ...
@@ -163,7 +163,7 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		// at least change type of record for locked serial to from "temporary" to "dummy"
 		err = cfg.DBBackend.LockSerialNumber(cfg, cert.SerialNumber, PKICertificateStatusDummy, true)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	} else {
 		ci := &ImportCertificate{
@@ -180,7 +180,7 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		}
 		err = cfg.DBBackend.StoreCertificate(cfg, ci, true)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 

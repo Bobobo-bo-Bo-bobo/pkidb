@@ -89,7 +89,7 @@ func CmdAddDummy(cfg *PKIConfiguration, args []string) error {
 		ci.Certificate = &x509.Certificate{SerialNumber: serial}
 		err = cfg.DBBackend.StoreCertificate(cfg, ci, false)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 	}
 	return nil

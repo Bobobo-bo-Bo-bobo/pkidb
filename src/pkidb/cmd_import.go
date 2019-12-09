@@ -114,7 +114,7 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 
 	err = cfg.DBBackend.StoreCertificate(cfg, &ic, false)
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return err
 	}
 
 	return nil

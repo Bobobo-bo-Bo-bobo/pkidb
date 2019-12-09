@@ -56,7 +56,7 @@ func CmdExport(cfg *PKIConfiguration, args []string) error {
 
 		ci, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 
 		if ci.PublicKey != "" {

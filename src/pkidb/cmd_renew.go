@@ -79,7 +79,7 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 		// get known ceritificate information from database
 		certinfo, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 		if certinfo.Revoked != nil {
             return fmt.Errorf("%s: Certificate with serial number %s has been revoked on %s (reason: %s)", GetFrame(), s, certinfo.Revoked.Time.Format(OutputTimeFormat), certinfo.Revoked.Reason)
@@ -87,7 +87,7 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 
 		raw, err := RenewCertificate(cfg, serial, newEnd)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 
 		// This should never fail ...
@@ -120,7 +120,7 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 		}
 		err = cfg.DBBackend.StoreCertificate(cfg, imp, true)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 
 		err = pem.Encode(fd, &pem.Block{Type: "CERTIFICATE", Bytes: raw})

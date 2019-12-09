@@ -24,7 +24,7 @@ func CmdBackup(cfg *PKIConfiguration, args []string) error {
 
 	dump, err := cfg.DBBackend.BackupToJSON(cfg)
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return err
 	}
 
 	data, err := json.Marshal(dump)

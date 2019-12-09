@@ -48,9 +48,8 @@ func CmdList(cfg *PKIConfiguration, args []string) error {
 	}
 
 	list, err := cfg.DBBackend.GetSerialNumbersByState(cfg, state)
-
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return err
 	}
 
 	if *output == "" {

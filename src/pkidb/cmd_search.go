@@ -46,7 +46,7 @@ func CmdSearch(cfg *PKIConfiguration, args []string) error {
 	for _, srch := range srchList {
 		serial, err := cfg.DBBackend.SearchSubject(cfg, srch)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 
 		if serial != nil {

@@ -14,11 +14,11 @@ func GenerateCRL(cfg *PKIConfiguration) ([]byte, error) {
 
 	revoked, err := cfg.DBBackend.GetRevokedCertificates(cfg)
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return nil, err
 	}
 	revlist, err := buildRevokecCertificateList(revoked)
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return nil, err
 	}
 
 	crlExpire = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(cfg.Global.CrlValidtyPeriod))
@@ -42,7 +42,7 @@ func buildRevokecCertificateList(rr []RevokeRequest) ([]pkix.RevokedCertificate,
 
 		oid, err := StringToASN1ObjectIdentifier(OIDCRLReason)
 		if err != nil {
-            return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return nil, err
 		}
 
 		l := pkix.RevokedCertificate{

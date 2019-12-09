@@ -55,13 +55,10 @@ func CmdShow(cfg *PKIConfiguration, args []string) error {
 
 		ci, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+            return err
 		}
 
 		out += PrintCertificateInformation(ci)
-		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
 
 		if i < len(snList)-1 {
 			out += "\n"
