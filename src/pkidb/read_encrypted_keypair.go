@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/x509"
 	"encoding/base64"
-    "fmt"
+	"fmt"
 	"github.com/youmark/pkcs8"
 	"io/ioutil"
 )
@@ -23,23 +23,23 @@ func ReadEncryptedKeyPair(pub string, priv string, pass string) ([]byte, []byte,
 
 	publicKey, err := ioutil.ReadFile(pub)
 	if err != nil {
-        return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	binaryEncryptedPrivateKey, err := ioutil.ReadFile(priv)
 	if err != nil {
-        return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	// parse encrypted PKCS8 DER data
 	binaryDecryptedPrivateKey, err := pkcs8.ParsePKCS8PrivateKey(binaryEncryptedPrivateKey, []byte(pass))
 	if err != nil {
-        return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	binaryDecryptedPrivateKeyMarshalled, err := x509.MarshalPKCS8PrivateKey(binaryDecryptedPrivateKey)
 	if err != nil {
-        return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	base64DecryptedPrivateKey := base64.StdEncoding.EncodeToString(binaryDecryptedPrivateKeyMarshalled)

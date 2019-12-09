@@ -33,12 +33,12 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	argParse.Parse(args)
 
 	if cfg.Global.CaPublicKey == "" || cfg.Global.CaPrivateKey == "" {
-        return fmt.Errorf("%s: Public and private key for signing CA must be defined", GetFrame())
+		return fmt.Errorf("%s: Public and private key for signing CA must be defined", GetFrame())
 	}
 
 	cmdSignTrailing := argParse.Args()
 	if len(cmdSignTrailing) > 1 {
-        return fmt.Errorf("%s: Too many arguments", GetFrame())
+		return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
 	if len(cmdSignTrailing) == 0 {
@@ -47,14 +47,14 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		csrData, err = ReadCSR(cmdSignTrailing[0])
 	}
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	sr.CSRData = csrData
 
 	if *template != "" {
 		templateContent, err := ParseTemplateFile(*template)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		if len(templateContent.Extension) != 0 {
@@ -91,21 +91,21 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	if *extensions != "" {
 		sr.Extension, err = ParseExtensionString(*extensions)
 		if err != nil {
-            return err
+			return err
 		}
 	}
 
 	if *extendedKeyUsage != "" {
 		sr.ExtendedKeyUsage, err = ParseExtendedKeyUsageString(*extendedKeyUsage)
 		if err != nil {
-            return err
+			return err
 		}
 	}
 
 	if *san != "" {
 		sr.SAN, err = ParseSANString(*san)
 		if err != nil {
-            return err
+			return err
 		}
 	}
 	if *autoRenew {
@@ -115,14 +115,14 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	if *basicConstraint != "" {
 		sr.BasicConstraint, err = ParseBasicConstraintString(*basicConstraint)
 		if err != nil {
-            return err
+			return err
 		}
 	}
 
 	if *keyUsage != "" {
 		sr.KeyUsage, err = ParseKeyUsageString(*keyUsage)
 		if err != nil {
-            return err
+			return err
 		}
 	}
 
@@ -139,7 +139,7 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	validityPeriod = cfg.Global.ValidityPeriod
 	if *validFor != 0 {
 		if *validFor < 0 {
-            return fmt.Errorf("%s: Validity period can't be negative", GetFrame())
+			return fmt.Errorf("%s: Validity period can't be negative", GetFrame())
 		}
 		if *validFor > 0 {
 			validityPeriod = *validFor
@@ -150,20 +150,20 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 
 	newCert, err := signRequest(cfg, &sr)
 	if err != nil {
-        return err
+		return err
 	}
 
 	// This should never fail ...
 	cert, err := x509.ParseCertificate(newCert)
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if *noRegister {
 		// at least change type of record for locked serial to from "temporary" to "dummy"
 		err = cfg.DBBackend.LockSerialNumber(cfg, cert.SerialNumber, PKICertificateStatusDummy, true)
 		if err != nil {
-            return err
+			return err
 		}
 	} else {
 		ci := &ImportCertificate{
@@ -180,14 +180,14 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		}
 		err = cfg.DBBackend.StoreCertificate(cfg, ci, true)
 		if err != nil {
-            return err
+			return err
 		}
 	}
 
 	if *output != "" {
 		fd, err = os.Create(*output)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	} else {
 		fd = os.Stdout
@@ -195,13 +195,13 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 
 	err = pem.Encode(fd, &pem.Block{Type: "CERTIFICATE", Bytes: newCert})
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if *output != "" {
 		err = fd.Close()
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 

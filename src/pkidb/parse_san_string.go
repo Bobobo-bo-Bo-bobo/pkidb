@@ -15,7 +15,7 @@ func ParseSANString(san string) ([]X509SubjectAlternateNameData, error) {
 			_san.Type = strings.ToLower(rawSan[0])
 			_san.Value = rawSan[1]
 		} else {
-            return nil, fmt.Errorf("%s: Invalid subject alternate name option", GetFrame())
+			return nil, fmt.Errorf("%s: Invalid subject alternate name option", GetFrame())
 		}
 
 		result = append(result, _san)

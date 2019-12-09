@@ -14,20 +14,20 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 	// parse provided CSR
 	err := sr.CSRData.CheckSignature()
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	// get new serial number
 	newSerial, err := NewSerialNumber(cfg)
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	// lock serial number in database
 	// XXX: There is a slim but possible race condition here (especially if serial number algorithm is "increment"). Other call might use the same serial number and lock it.
 	//      At the moment we simple ignore it
 	err = cfg.DBBackend.LockSerialNumber(cfg, newSerial, PKICertificateStatusTemporary, false)
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	dgst, found := DigestMap[cfg.Global.Digest]
@@ -35,9 +35,9 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 		// remove locked serial number from the database
 		err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 		if err != nil {
-            return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
-        return nil, fmt.Errorf("%s: Can't map digest %s to a signature algorithm", GetFrame(), cfg.Global.Digest)
+		return nil, fmt.Errorf("%s: Can't map digest %s to a signature algorithm", GetFrame(), cfg.Global.Digest)
 	}
 
 	certTemplate := x509.Certificate{
@@ -68,9 +68,9 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 				// remove locked serial number from the database
 				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 				if err != nil {
-                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
-                return nil, fmt.Errorf("%s: Can't convert %s to an IP address", GetFrame(), _san.Value)
+				return nil, fmt.Errorf("%s: Can't convert %s to an IP address", GetFrame(), _san.Value)
 			}
 			certTemplate.IPAddresses = append(certTemplate.IPAddresses, ip)
 		case "uri":
@@ -79,13 +79,13 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 				// remove locked serial number from the database
 				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 				if err != nil {
-                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
-                return nil, fmt.Errorf("%s: Can't convert %s to an URI", GetFrame(), _san.Value)
+				return nil, fmt.Errorf("%s: Can't convert %s to an URI", GetFrame(), _san.Value)
 			}
 			certTemplate.URIs = append(certTemplate.URIs, u)
 		default:
-            return nil, fmt.Errorf("%s: Unsupported subject alternate name type %s", GetFrame(), _san.Type)
+			return nil, fmt.Errorf("%s: Unsupported subject alternate name type %s", GetFrame(), _san.Type)
 		}
 	}
 
@@ -96,9 +96,9 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 			// remove locked serial number from the database
 			err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 			if err != nil {
-                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
-            return nil, fmt.Errorf("%s: Invalid key usage %s", GetFrame(), ku.Type)
+			return nil, fmt.Errorf("%s: Invalid key usage %s", GetFrame(), ku.Type)
 		}
 		certTemplate.KeyUsage |= keyusage
 	}
@@ -114,7 +114,7 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 				if errdb != nil {
 					return nil, errdb
 				}
-                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 			certTemplate.UnknownExtKeyUsage = append(certTemplate.UnknownExtKeyUsage, oid)
 		} else {
@@ -126,7 +126,7 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 	for _, ext := range sr.Extension {
 		pkixext, err := BuildX509Extension(ext)
 		if err != nil {
-            return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		certTemplate.ExtraExtensions = append(certTemplate.ExtraExtensions, pkixext)
 	}
@@ -144,9 +144,9 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 				// remove locked serial number from the database
 				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 				if err != nil {
-                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
-                return nil, fmt.Errorf("%s: Basic constraint CA is a boolean and only accepts true or false as value", GetFrame())
+				return nil, fmt.Errorf("%s: Basic constraint CA is a boolean and only accepts true or false as value", GetFrame())
 			}
 		case "pathlen":
 			pl, err := strconv.Atoi(bc.Value)
@@ -154,17 +154,17 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 				// remove locked serial number from the database
 				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 				if err != nil {
-                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
-                return nil, fmt.Errorf("%s: Can't convert %s to an integer", GetFrame(), bc.Value)
+				return nil, fmt.Errorf("%s: Can't convert %s to an integer", GetFrame(), bc.Value)
 			}
 			if pl < 0 {
 				// remove locked serial number from the database
 				err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 				if err != nil {
-                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
-                return nil, fmt.Errorf("%s: Pathlen can't be negative", GetFrame())
+				return nil, fmt.Errorf("%s: Pathlen can't be negative", GetFrame())
 			}
 
 			certTemplate.MaxPathLen = pl
@@ -175,9 +175,9 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 			// remove locked serial number from the database
 			err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 			if err != nil {
-                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
-            return nil, fmt.Errorf("%s: Invalid basic constraint %s", GetFrame(), bc.Type)
+			return nil, fmt.Errorf("%s: Invalid basic constraint %s", GetFrame(), bc.Type)
 		}
 	}
 	/*
@@ -191,10 +191,10 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 			// remove locked serial number from the database
 			err = cfg.DBBackend.DeleteCertificate(cfg, newSerial)
 			if err != nil {
-                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
-            return nil, fmt.Errorf("%s: Can't set pathlen constraint. CA constraint must be set and key usage must include keyCertSign", GetFrame())
+			return nil, fmt.Errorf("%s: Can't set pathlen constraint. CA constraint must be set and key usage must include keyCertSign", GetFrame())
 		}
 	}
 	certTemplate.BasicConstraintsValid = true
@@ -206,7 +206,7 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 		if errdb != nil {
 			return nil, errdb
 		}
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	return newCert, nil
 }

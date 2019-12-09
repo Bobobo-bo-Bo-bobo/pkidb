@@ -16,7 +16,7 @@ func ParseExtensionString(extensions string) ([]X509ExtensionData, error) {
 
 		rawExt := strings.Split(ext, ":")
 		if len(rawExt) != 3 {
-            return nil, fmt.Errorf("%s: Invalid extension data", GetFrame())
+			return nil, fmt.Errorf("%s: Invalid extension data", GetFrame())
 		}
 
 		e.Name = rawExt[0]
@@ -26,13 +26,13 @@ func ParseExtensionString(extensions string) ([]X509ExtensionData, error) {
 		} else if rawExt[1] == "1" {
 			e.Critical = true
 		} else {
-            return nil, fmt.Errorf("%s: Invalid extension data", GetFrame())
+			return nil, fmt.Errorf("%s: Invalid extension data", GetFrame())
 		}
 
 		if rawExt[2] != "" {
 			e.Data, err = base64.StdEncoding.DecodeString(rawExt[2])
 			if err != nil {
-                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 		}
 		result = append(result, e)

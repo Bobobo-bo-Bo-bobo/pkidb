@@ -29,7 +29,7 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 	if len(cmdRevokeTrailing) == 0 {
 		raw, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		rawstr := string(raw)
 		rawstr = strings.Replace(rawstr, "\r", "", -1)
@@ -50,7 +50,7 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 	if *rdate != "" {
 		revtime, err = time.Parse(ASN1GeneralizedTimeFormat, *rdate)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	} else {
 		revtime = time.Now()
@@ -60,7 +60,7 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 		serial = big.NewInt(0)
 		serial, ok := serial.SetString(sn, 0)
 		if !ok {
-            return fmt.Errorf("%s: Invalid serial number %s", GetFrame(), sn)
+			return fmt.Errorf("%s: Invalid serial number %s", GetFrame(), sn)
 		}
 
 		rr := &RevokeRequest{
@@ -71,7 +71,7 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 		}
 		err = cfg.DBBackend.StoreRevocation(cfg, rr)
 		if err != nil {
-            return err
+			return err
 		}
 	}
 	return nil

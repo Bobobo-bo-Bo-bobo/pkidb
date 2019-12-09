@@ -29,7 +29,7 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 
 	cmdImportTrailing := argParse.Args()
 	if len(cmdImportTrailing) > 1 {
-        return fmt.Errorf("%s: Too many arguments", GetFrame())
+		return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
 	if len(cmdImportTrailing) == 0 {
@@ -38,13 +38,13 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 		data, err = ioutil.ReadFile(cmdImportTrailing[0])
 	}
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	pblock, _ := pem.Decode(data)
 	ic.Certificate, err = x509.ParseCertificate(pblock.Bytes)
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	ar = &AutoRenew{
@@ -60,18 +60,18 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 	if *csr != "" {
 		data, err = ioutil.ReadFile(*csr)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		pblock, _ = pem.Decode(data)
 		ic.CSR, err = x509.ParseCertificateRequest(pblock.Bytes)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 
 	if *delta != 0 {
 		if *delta < 0 {
-            return fmt.Errorf("%s: Delta must be greater than 0", GetFrame())
+			return fmt.Errorf("%s: Delta must be greater than 0", GetFrame())
 		}
 		if ic.AutoRenew == nil {
 			ic.AutoRenew = ar
@@ -81,7 +81,7 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 
 	if *period != 0 {
 		if *period < 0 {
-            return fmt.Errorf("%s: Period must be greater than 0", GetFrame())
+			return fmt.Errorf("%s: Period must be greater than 0", GetFrame())
 		}
 		if ic.AutoRenew == nil {
 			ic.AutoRenew = ar
@@ -104,17 +104,17 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 			}
 			_t, err := time.Parse(ASN1GeneralizedTimeFormat, _revoked[1])
 			if err != nil {
-                return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 			ic.Revoked.Time = _t
 		} else {
-            return fmt.Errorf("%s: Invalid format for revocation option", GetFrame())
+			return fmt.Errorf("%s: Invalid format for revocation option", GetFrame())
 		}
 	}
 
 	err = cfg.DBBackend.StoreCertificate(cfg, &ic, false)
 	if err != nil {
-        return err
+		return err
 	}
 
 	return nil

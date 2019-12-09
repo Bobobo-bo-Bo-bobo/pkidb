@@ -29,7 +29,7 @@ func CmdExport(cfg *PKIConfiguration, args []string) error {
 	if len(cmdExportTrailing) == 0 {
 		raw, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		rawstr := string(raw)
 		rawstr = strings.Replace(rawstr, "\r", "", -1)
@@ -51,22 +51,22 @@ func CmdExport(cfg *PKIConfiguration, args []string) error {
 		serial = big.NewInt(0)
 		serial, ok := serial.SetString(sn, 0)
 		if !ok {
-            return fmt.Errorf("%s: Invalid serial number %s", GetFrame(), sn)
+			return fmt.Errorf("%s: Invalid serial number %s", GetFrame(), sn)
 		}
 
 		ci, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
 		if err != nil {
-            return err
+			return err
 		}
 
 		if ci.PublicKey != "" {
 			decoded, err := base64.StdEncoding.DecodeString(ci.PublicKey)
 			if err != nil {
-                return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 			err = pem.Encode(&data, &pem.Block{Type: "CERTIFICATE", Bytes: decoded})
 			if err != nil {
-                return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 		}
 	}
@@ -76,18 +76,18 @@ func CmdExport(cfg *PKIConfiguration, args []string) error {
 	} else {
 		fd, err = os.Create(*output)
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 
 	_, err = fmt.Fprintf(fd, "%s", data.String())
 	if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	if *output != "" {
 		err = fd.Close()
 		if err != nil {
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 

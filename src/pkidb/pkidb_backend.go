@@ -35,4 +35,5 @@ type PKIDBBackend interface {
 	LockSerialNumber(*PKIConfiguration, *big.Int, int, bool) error
 	GetRevokedCertificates(*PKIConfiguration) ([]RevokeRequest, error)
 	GetCertificate(*PKIConfiguration, *big.Int) ([]byte, error)
+	StoreState(*PKIConfiguration, *big.Int, string) error
 }

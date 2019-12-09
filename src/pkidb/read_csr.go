@@ -25,21 +25,21 @@ func ReadCSR(csrFile string) (*x509.CertificateRequest, error) {
 		rawCSR, err = ioutil.ReadFile(csrFile)
 	}
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if rawCSR == nil {
-        return nil, fmt.Errorf("%s: No certificate signing request data found", GetFrame())
+		return nil, fmt.Errorf("%s: No certificate signing request data found", GetFrame())
 	}
 
 	_csr, _ := pem.Decode(rawCSR)
 	if _csr == nil {
-        return nil, fmt.Errorf("%s: Can't decode provided data into signing request", GetFrame())
+		return nil, fmt.Errorf("%s: Can't decode provided data into signing request", GetFrame())
 	}
 
 	csr, err := x509.ParseCertificateRequest(_csr.Bytes)
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	return csr, nil
