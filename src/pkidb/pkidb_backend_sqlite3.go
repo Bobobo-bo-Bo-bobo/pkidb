@@ -1641,3 +1641,149 @@ func (db PKIDBBackendSQLite3) StoreState(cfg *PKIConfiguration, serial *big.Int,
 	tx.Commit()
 	return nil
 }
+
+// GetStatistics - get statistics
+func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]map[string]int64, error) {
+	var sizeStat = make(map[string]int64)
+	var keySizeStat = make(map[string]int64)
+	var sigAlgoStat = make(map[string]int64)
+	var revokedStat = make(map[string]int64)
+	var result = make(map[string]map[string]int64)
+	var key string
+	var nkey int
+	var value int64
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	// states
+	srows, err := tx.Query("SELECT state, COUNT(state) FROM certificate GROUP BY state;")
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer srows.Close()
+
+	for srows.Next() {
+		err = srows.Scan(&nkey, &value)
+		if err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
+		key, found := PKIReversStatusMap[nkey]
+		if !found {
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: Invalid state %d", GetFrame(), nkey)
+		}
+		sizeStat[key] = value
+	}
+	err = srows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	// key size
+	ksearch, err := tx.Prepare("SELECT keysize, COUNT(keysize) FROM certificate WHERE state=? GROUP BY keysize;")
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer ksearch.Close()
+
+	krows, err := ksearch.Query(PKICertificateStatusValid)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer krows.Close()
+
+	for krows.Next() {
+		err = krows.Scan(&key, &value)
+		if err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		keySizeStat[key] = value
+	}
+	err = krows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	// algorithms
+	asearch, err := tx.Prepare("SELECT algorithm, COUNT(algorithm) FROM signature_algorithm INNER JOIN certificate ON certificate.signature_algorithm_id=signature_algorithm.id WHERE certificate.state=? GROUP BY algorithm;")
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer asearch.Close()
+
+	arows, err := asearch.Query(PKICertificateStatusValid)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer arows.Close()
+
+	for arows.Next() {
+		err = arows.Scan(&key, &value)
+		if err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		sigAlgoStat[key] = value
+	}
+	err = arows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	// revoked
+	rsearch, err := tx.Prepare("SELECT revocation_reason, COUNT(revocation_reason) FROM certificate WHERE state=? GROUP BY revocation_reason;")
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer rsearch.Close()
+
+	rrows, err := rsearch.Query(PKICertificateStatusRevoked)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer rrows.Close()
+
+	for rrows.Next() {
+		err = rrows.Scan(&nkey, &value)
+		if err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		key, found := RevocationReasonReverseMap[nkey]
+		if !found {
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: Invalid revocation reason %d", GetFrame(), nkey)
+		}
+		revokedStat[key] = value
+	}
+	err = rrows.Err()
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	tx.Commit()
+
+	result["state"] = sizeStat
+	result["keysize"] = keySizeStat
+	result["signature_algorithm"] = sigAlgoStat
+	result["revoked"] = revokedStat
+
+	return result, nil
+}

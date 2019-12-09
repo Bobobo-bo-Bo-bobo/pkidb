@@ -36,4 +36,5 @@ type PKIDBBackend interface {
 	GetRevokedCertificates(*PKIConfiguration) ([]RevokeRequest, error)
 	GetCertificate(*PKIConfiguration, *big.Int) ([]byte, error)
 	StoreState(*PKIConfiguration, *big.Int, string) error
+	GetStatistics(*PKIConfiguration) (map[string]map[string]int64, error)
 }

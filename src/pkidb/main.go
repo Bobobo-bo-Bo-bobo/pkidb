@@ -86,6 +86,8 @@ func main() {
 		err = CmdShow(config, trailingArguments[1:])
 	case "sign":
 		err = CmdSign(config, trailingArguments[1:])
+	case "statistics":
+		err = CmdStatistics(config, trailingArguments[1:])
 	default:
 		fmt.Fprintln(os.Stderr, "Invalid command")
 		fmt.Fprintln(os.Stderr, "")
