@@ -76,6 +76,15 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 			return fmt.Errorf("Can't convert serial number %s to big integer", s)
 		}
 
+		// get known ceritificate information from database
+		certinfo, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
+		if err != nil {
+			return err
+		}
+		if certinfo.Revoked != nil {
+			return fmt.Errorf("Certificate with serial number %s has been revoked on %s (reason: %s)", s, certinfo.Revoked.Time.Format(OutputTimeFormat), certinfo.Revoked.Reason)
+		}
+
 		raw, err := RenewCertificate(cfg, serial, newEnd)
 		if err != nil {
 			return err
@@ -88,12 +97,6 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 		}
 
 		// Update certificate data in database ...
-		// get known ceritificate information from database
-		certinfo, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
-		if err != nil {
-			return err
-		}
-
 		if certinfo.CSR != "" {
 			rawCSR, err := base64.StdEncoding.DecodeString(certinfo.CSR)
 			if err != nil {

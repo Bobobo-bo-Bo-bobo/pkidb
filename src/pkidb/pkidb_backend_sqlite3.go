@@ -1587,11 +1587,23 @@ func (db PKIDBBackendSQLite3) GetCertificate(cfg *PKIConfiguration, serial *big.
 	}
 
 	tx.Commit()
+	/*
+		data, err := base64.StdEncoding.DecodeString(cert)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
-	data, err := base64.StdEncoding.DecodeString(cert)
-	if err != nil {
-		return nil, err
+	data := "-----BEGIN CERTIFICATE-----\n"
+	// reformat string to public key in PEM format
+	lines64Chars := len(cert) / 64
+	for i := 0; i < lines64Chars; i++ {
+		data += cert[64*i:64*(i+1)] + "\n"
 	}
+	if len(cert)%64 != 0 {
+		data += cert[64*lines64Chars:len(cert)] + "\n"
+	}
+	data += "-----END CERTIFICATE-----"
 
-	return data, nil
+	return []byte(data), nil
 }

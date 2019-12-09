@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"math/big"
 	"time"
@@ -18,7 +19,12 @@ func RenewCertificate(cfg *PKIConfiguration, serial *big.Int, newEnd time.Time) 
 		return nil, fmt.Errorf("No certificate with serial number %s found in database", serial.Text(10))
 	}
 
-	oldCert, err := x509.ParseCertificate(cert)
+	pb, _ := pem.Decode(cert)
+	if pb == nil {
+		return nil, fmt.Errorf("Can't decode certificate from database")
+	}
+
+	oldCert, err := x509.ParseCertificate(pb.Bytes)
 	if err != nil {
 		return nil, err
 	}
