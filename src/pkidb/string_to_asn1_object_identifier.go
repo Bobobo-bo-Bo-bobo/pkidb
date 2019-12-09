@@ -17,11 +17,11 @@ func StringToASN1ObjectIdentifier(s string) (asn1.ObjectIdentifier, error) {
 			continue
 		}
 		if sub == "" {
-			return nil, fmt.Errorf("Invalid OID representation")
+            return nil, fmt.Errorf("%s: Invalid OID representation", GetFrame())
 		}
 		oid, err := strconv.Atoi(sub)
 		if err != nil {
-			return nil, err
+            return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		oi = append(oi, oid)
 	}

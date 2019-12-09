@@ -19,17 +19,17 @@ func CmdBackup(cfg *PKIConfiguration, args []string) error {
 
 	cmdBackupTrailing := argParse.Args()
 	if len(cmdBackupTrailing) > 0 {
-		return fmt.Errorf("Too many arguments")
+        return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
 	dump, err := cfg.DBBackend.BackupToJSON(cfg)
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	data, err := json.Marshal(dump)
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if *output == "" {
@@ -37,18 +37,18 @@ func CmdBackup(cfg *PKIConfiguration, args []string) error {
 	} else {
 		fd, err = os.Create(*output)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 
 	_, err = fmt.Fprintf(fd, "%s", string(data))
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	if *output != "" {
 		err = fd.Close()
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 

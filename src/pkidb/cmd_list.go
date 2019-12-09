@@ -24,7 +24,7 @@ func CmdList(cfg *PKIConfiguration, args []string) error {
 
 	cmdListTrailing := argParse.Args()
 	if len(cmdListTrailing) > 0 {
-		return fmt.Errorf("Too many arguments")
+        return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
 	if *expired {
@@ -50,7 +50,7 @@ func CmdList(cfg *PKIConfiguration, args []string) error {
 	list, err := cfg.DBBackend.GetSerialNumbersByState(cfg, state)
 
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if *output == "" {
@@ -58,7 +58,7 @@ func CmdList(cfg *PKIConfiguration, args []string) error {
 	} else {
 		fd, err = os.Create(*output)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 
@@ -72,13 +72,13 @@ func CmdList(cfg *PKIConfiguration, args []string) error {
 
 	_, err = fmt.Fprintf(fd, "%s", outlist)
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if *output != "" {
 		err = fd.Close()
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 

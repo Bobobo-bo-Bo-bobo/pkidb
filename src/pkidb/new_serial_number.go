@@ -13,14 +13,14 @@ func NewSerialNumber(cfg *PKIConfiguration) (*big.Int, error) {
 
 	if cfg.Global.SerialNumber == "increment" {
 		serial, err = cfg.DBBackend.GetLastSerialNumber(cfg)
-		return serial, err
+        return serial, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if cfg.Global.SerialNumber == "random" {
 		for {
 			serial, err = rand.Int(rand.Reader, MaximumSerialNumber)
 			if err != nil {
-				return nil, err
+                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
 			// Increment result by one because RFC 3280 defines the serial number
@@ -31,7 +31,7 @@ func NewSerialNumber(cfg *PKIConfiguration) (*big.Int, error) {
 
 			free, err := cfg.DBBackend.IsFreeSerialNumber(cfg, serial)
 			if err != nil {
-				return nil, err
+                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 			if free {
 				return serial, nil
@@ -39,5 +39,5 @@ func NewSerialNumber(cfg *PKIConfiguration) (*big.Int, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Unsupported serial number generation scheme: %s", cfg.Global.SerialNumber)
+    return nil, fmt.Errorf("%s: Unsupported serial number generation scheme: %s", GetFrame(), cfg.Global.SerialNumber)
 }

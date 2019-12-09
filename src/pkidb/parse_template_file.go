@@ -13,7 +13,7 @@ func ParseTemplateFile(template string) (*TemplateConfig, error) {
 
 	cfg, err := ini.LoadSources(ini.LoadOptions{IgnoreInlineComment: true}, template)
 	if err != nil {
-		return nil, err
+        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	sections := cfg.SectionStrings()
@@ -21,11 +21,11 @@ func ParseTemplateFile(template string) (*TemplateConfig, error) {
 		if sect == "global" {
 			global, err := cfg.GetSection("global")
 			if err != nil {
-				return nil, err
+                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 			err = global.MapTo(&config.Global)
 			if err != nil {
-				return nil, err
+                return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 		} else if strings.Index(sect, "extension:") == 0 {
 
@@ -36,17 +36,17 @@ func ParseTemplateFile(template string) (*TemplateConfig, error) {
 
 				s, err := cfg.GetSection(sect)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				err = s.MapTo(&tmplkeyusage)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				keyusage, err := ParseKeyUsageString(tmplkeyusage.Data)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				config.KeyUsage = append(config.KeyUsage, keyusage...)
@@ -56,17 +56,17 @@ func ParseTemplateFile(template string) (*TemplateConfig, error) {
 
 				s, err := cfg.GetSection(sect)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				err = s.MapTo(&tmplextkeyusage)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				extkeyusage, err := ParseExtendedKeyUsageString(tmplextkeyusage.Data)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				config.ExtendedKeyUsage = append(config.ExtendedKeyUsage, extkeyusage...)
@@ -76,15 +76,15 @@ func ParseTemplateFile(template string) (*TemplateConfig, error) {
 
 				s, err := cfg.GetSection(sect)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				err = s.MapTo(&tmplext)
 				if err != nil {
-					return nil, err
+                    return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 				if tmplext.Data != "" && tmplext.DataBase64 != "" {
-					return nil, fmt.Errorf("data and data:base64 are mutually exclusive in a template section")
+                    return nil, fmt.Errorf("%s: data and data:base64 are mutually exclusive in a template section", GetFrame())
 				}
 				extdata := X509ExtensionData{
 					Name:     name,
@@ -97,13 +97,13 @@ func ParseTemplateFile(template string) (*TemplateConfig, error) {
 				if tmplext.DataBase64 != "" {
 					extdata.Data, err = base64.StdEncoding.DecodeString(tmplext.DataBase64)
 					if err != nil {
-						return nil, err
+                        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 					}
 				}
 
 			}
 		} else {
-			return nil, fmt.Errorf("Invalid template section %s", sect)
+            return nil, fmt.Errorf("%s: Invalid template section %s", GetFrame(), sect)
 		}
 	}
 

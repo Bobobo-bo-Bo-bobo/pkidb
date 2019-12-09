@@ -16,7 +16,7 @@ func ParseBasicConstraintString(basicConstraint string) ([]X509BasicConstraintDa
 			_bcd.Type = rawBcd[0]
 			_bcd.Value = rawBcd[1]
 		} else {
-			return nil, fmt.Errorf("Invalid basic constraint data")
+            return nil, fmt.Errorf("%s: Invalid basic constraint data", GetFrame())
 		}
 		result = append(result, _bcd)
 	}

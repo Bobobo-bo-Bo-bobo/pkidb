@@ -25,7 +25,7 @@ func CmdSearch(cfg *PKIConfiguration, args []string) error {
 	if len(cmdSearchTrailing) == 0 {
 		raw, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		rawstr := string(raw)
 		rawstr = strings.Replace(rawstr, "\r", "", -1)
@@ -46,7 +46,7 @@ func CmdSearch(cfg *PKIConfiguration, args []string) error {
 	for _, srch := range srchList {
 		serial, err := cfg.DBBackend.SearchSubject(cfg, srch)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		if serial != nil {
@@ -63,18 +63,18 @@ func CmdSearch(cfg *PKIConfiguration, args []string) error {
 	} else {
 		fd, err = os.Create(*output)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 
 	_, err = fmt.Fprintf(fd, "%s", out)
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	if *output != "" {
 		err = fd.Close()
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 

@@ -19,7 +19,7 @@ func CmdRestore(cfg *PKIConfiguration, args []string) error {
 	argParse.Parse(args)
 
 	if len(args) > 1 {
-		return fmt.Errorf("Too many arguments")
+        return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
 	if len(args) == 0 {
@@ -28,17 +28,17 @@ func CmdRestore(cfg *PKIConfiguration, args []string) error {
 		data, err = ioutil.ReadFile(args[0])
 	}
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	err = json.Unmarshal(data, &restore)
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	err = cfg.DBBackend.RestoreFromJSON(cfg, &restore)
 	if err != nil {
-		return err
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	return nil

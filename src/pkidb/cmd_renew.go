@@ -33,7 +33,7 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 	if len(cmdRenewTrailing) == 0 {
 		raw, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		rawstr := string(raw)
 		rawstr = strings.Replace(rawstr, "\r", "", -1)
@@ -53,7 +53,7 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 
 	if *period != 0 {
 		if *period < 0 {
-			return fmt.Errorf("New validity period must be positive")
+            return fmt.Errorf("%s: New validity period must be positive", GetFrame())
 		}
 		newEnd = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(*period))
 	} else {
@@ -63,7 +63,7 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 	if *output != "" {
 		fd, err = os.Create(*output)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	} else {
 		fd = os.Stdout
@@ -73,39 +73,39 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 		serial = big.NewInt(0)
 		serial, ok := serial.SetString(s, 0)
 		if !ok {
-			return fmt.Errorf("Can't convert serial number %s to big integer", s)
+            return fmt.Errorf("%s: Can't convert serial number %s to big integer", GetFrame(), s)
 		}
 
 		// get known ceritificate information from database
 		certinfo, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		if certinfo.Revoked != nil {
-			return fmt.Errorf("Certificate with serial number %s has been revoked on %s (reason: %s)", s, certinfo.Revoked.Time.Format(OutputTimeFormat), certinfo.Revoked.Reason)
+            return fmt.Errorf("%s: Certificate with serial number %s has been revoked on %s (reason: %s)", GetFrame(), s, certinfo.Revoked.Time.Format(OutputTimeFormat), certinfo.Revoked.Reason)
 		}
 
 		raw, err := RenewCertificate(cfg, serial, newEnd)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		// This should never fail ...
 		ncert, err := x509.ParseCertificate(raw)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		// Update certificate data in database ...
 		if certinfo.CSR != "" {
 			rawCSR, err := base64.StdEncoding.DecodeString(certinfo.CSR)
 			if err != nil {
-				return err
+                return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
 			oldCSR, err = x509.ParseCertificateRequest(rawCSR)
 			if err != nil {
-				return err
+                return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 		} else {
 			oldCSR = nil
@@ -120,19 +120,19 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 		}
 		err = cfg.DBBackend.StoreCertificate(cfg, imp, true)
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		err = pem.Encode(fd, &pem.Block{Type: "CERTIFICATE", Bytes: raw})
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 
 	if *output != "" {
 		err = fd.Close()
 		if err != nil {
-			return err
+            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
 
