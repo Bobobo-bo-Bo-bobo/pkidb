@@ -1787,3 +1787,32 @@ func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]m
 
 	return result, nil
 }
+
+func (db PKIDBBackendSQLite3) DeleteAutoRenew(cfg *PKIConfiguration, serial *big.Int) error {
+	sn := serial.Text(10)
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	upd, err := tx.Prepare("UPDATE certificate SET auto_renewable=False, auto_renew_start_period=NULL, auto_renew_validity_period=NULL WHERE serial_number=?;")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer upd.Close()
+
+	_, err = upd.Exec(&sn)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			return fmt.Errorf("%s: Can't find serial number %s in database", GetFrame(), sn)
+		}
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	tx.Commit()
+	return nil
+}

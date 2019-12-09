@@ -23,6 +23,7 @@ type PKIDBBackend interface {
 	StoreX509Extension(*PKIConfiguration, *ImportCertificate, []pkix.Extension) error
 	StoreRevocation(*PKIConfiguration, *RevokeRequest) error
 	StoreAutoRenew(*PKIConfiguration, *AutoRenew) error
+	DeleteAutoRenew(*PKIConfiguration, *big.Int) error
 	DeleteCertificate(*PKIConfiguration, *big.Int) error
 	GetCertificateInformation(*PKIConfiguration, *big.Int) (*CertificateInformation, error)
 	GetSignatureAlgorithmName(*PKIConfiguration, int) (string, error)
