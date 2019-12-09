@@ -1788,6 +1788,7 @@ func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]m
 	return result, nil
 }
 
+// DeleteAutoRenew - delete auto renew data
 func (db PKIDBBackendSQLite3) DeleteAutoRenew(cfg *PKIConfiguration, serial *big.Int) error {
 	sn := serial.Text(10)
 
@@ -1803,12 +1804,105 @@ func (db PKIDBBackendSQLite3) DeleteAutoRenew(cfg *PKIConfiguration, serial *big
 	}
 	defer upd.Close()
 
-	_, err = upd.Exec(&sn)
+	_, err = upd.Exec(sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
 			return fmt.Errorf("%s: Can't find serial number %s in database", GetFrame(), sn)
 		}
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// Housekeeping - housekeeping
+func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool, period int) error {
+	var sn string
+	var dstr string
+	var startPeriod int64
+	var validPeriod int64
+
+	tx, err := cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	if autoRenew {
+		asearch, err := tx.Prepare("SELECT serial_number, end_date, auto_renew_start_period, auto_renew_validity_period FROM certificate WHERE auto_renewable=True AND (state=? OR state=?);")
+		if err != nil {
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		defer asearch.Close()
+
+		arows, err := asearch.Query(PKICertificateStatusValid, PKICertificateStatusExpired)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		defer arows.Close()
+		for arows.Next() {
+			err = arows.Scan(&sn, &dstr, &startPeriod, &validPeriod)
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			}
+		}
+		err = arows.Err()
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		edate, err := time.Parse(SQLite3TimeFormat, dstr)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
+		delta := time.Now().Sub(edate).Seconds()
+		if int64(delta) >= startPeriod {
+			// TODO: Renew certificate
+			fmt.Printf("Renewing %s\n", sn)
+		}
+	}
+
+	// Set all invalid certificates to valid if notBefore < now and notAfter > now
+	upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (start_date < ?) AND (end_date > ?);")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer upd.Close()
+	_, err = upd.Exec(PKICertificateStatusValid, PKICertificateStatusInvalid, time.Now(), time.Now())
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	// Set all valid certificates to invalid if notBefore >= now
+	upd2, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (start_date > ?);")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer upd2.Close()
+	_, err = upd2.Exec(PKICertificateStatusInvalid, PKICertificateStatusValid, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	// Set all valid certificates to expired if notAfter <= now
+	upd3, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (end_date <= ?)")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer upd3.Close()
+	_, err = upd3.Exec(PKICertificateStatusExpired, PKICertificateStatusValid, time.Now())
+	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}

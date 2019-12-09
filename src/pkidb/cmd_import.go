@@ -42,6 +42,10 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 	}
 
 	pblock, _ := pem.Decode(data)
+	if pblock == nil {
+		return fmt.Errorf("%s: Can't decode provided data into a certificate", GetFrame())
+	}
+
 	ic.Certificate, err = x509.ParseCertificate(pblock.Bytes)
 	if err != nil {
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())

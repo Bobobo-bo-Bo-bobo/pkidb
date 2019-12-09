@@ -20,11 +20,11 @@ func CmdSet(cfg *PKIConfiguration, args []string) error {
 	var renewPeriod int
 
 	argParse := flag.NewFlagSet("cmd-set", flag.ExitOnError)
-	var autoRenew = flag.Bool("auto-renew", false, "Mark a certificate as auto renewable")
-	var autoRenewStartPeriod = flag.Int("auto-renew-start-period", 0, "Set auto renew start period in days")
-	var autoRenewValidityPeriod = flag.Int("auto-renew-validity-period", 0, "Renew the certificate for <period> days")
-	var noAutoRenew = flag.Bool("no-auto-renew", false, "Remove auto renewable flag from certificate meta data")
-	var csrFile = flag.String("csr", "", "Set certificate signing request")
+	var autoRenew = argParse.Bool("auto-renew", false, "Mark a certificate as auto renewable")
+	var autoRenewStartPeriod = argParse.Int("auto-renew-start-period", 0, "Set auto renew start period in days")
+	var autoRenewValidityPeriod = argParse.Int("auto-renew-validity-period", 0, "Renew the certificate for <period> days")
+	var noAutoRenew = argParse.Bool("no-auto-renew", false, "Remove auto renewable argParse from certificate meta data")
+	var csrFile = argParse.String("csr", "", "Set certificate signing request")
 	argParse.Usage = showHelpSet
 	argParse.Parse(args)
 
@@ -60,8 +60,15 @@ func CmdSet(cfg *PKIConfiguration, args []string) error {
 	if *autoRenewStartPeriod > 0 {
 		*autoRenew = true
 	}
+	if *autoRenewStartPeriod < 0 {
+		return fmt.Errorf("%s: auto-renew-start-period must be positive", GetFrame())
+	}
+
 	if *autoRenewValidityPeriod > 0 {
 		*autoRenew = true
+	}
+	if *autoRenewValidityPeriod < 0 {
+		return fmt.Errorf("%s: auto-renew-validity-period must be positive", GetFrame())
 	}
 
 	if *autoRenew && *noAutoRenew {
@@ -101,8 +108,8 @@ func CmdSet(cfg *PKIConfiguration, args []string) error {
 
 			ar := &AutoRenew{
 				SerialNumber: serial,
-				Delta:        renewStart,
-				Period:       renewPeriod,
+				Delta:        renewPeriod,
+				Period:       renewStart,
 			}
 
 			err = cfg.DBBackend.StoreAutoRenew(cfg, ar)
