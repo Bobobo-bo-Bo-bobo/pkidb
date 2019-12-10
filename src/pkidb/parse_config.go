@@ -35,7 +35,22 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 	case "mysql":
 		fallthrough
 	case "pgsql":
-		fallthrough
+		db, err := cfg.GetSection(config.Global.Backend)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
+		err = db.MapTo(&dbconfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		config.Database = &dbconfig
+		var pgsql PKIDBBackendPgSQL
+		err = pgsql.Initialise(&config)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		config.DBBackend = pgsql
 	case "sqlite3":
 		db, err := cfg.GetSection(config.Global.Backend)
 		if err != nil {

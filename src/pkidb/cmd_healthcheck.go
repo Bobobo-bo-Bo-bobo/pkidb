@@ -17,9 +17,9 @@ func CmdHealthcheck(cfg *PKIConfiguration, args []string) error {
 		return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
-    // Note: To avoid parsing errors we don't do anything until this bug
-    //       has been fixed:
-    //          encoding/asn1: valid GeneralizedTime not parsed #15842 (https://github.com/golang/go/issues/15842)
+	// Note: To avoid parsing errors we don't do anything until this bug
+	//       has been fixed:
+	//          encoding/asn1: valid GeneralizedTime not parsed #15842 (https://github.com/golang/go/issues/15842)
 	if *fix {
 	}
 
