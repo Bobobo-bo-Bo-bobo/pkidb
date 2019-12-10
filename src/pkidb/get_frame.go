@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"runtime"
 )
 
@@ -28,8 +29,8 @@ func GetFrame() string {
 	}
 
 	if frame.Line == 0 {
-		return fmt.Sprintf("%s:?:%s", frame.File, frame.Function)
+		return fmt.Sprintf("%s:?:%s", filepath.Base(file), frame.Function)
 	}
 
-	return fmt.Sprintf("%s:%d:%s", frame.File, frame.Line, frame.Function)
+	return fmt.Sprintf("%s:%d:%s", filepath.Base(file), frame.Line, frame.Function)
 }
