@@ -323,15 +323,14 @@ const HelpTextAddDummy = `
                                             file is not present (e.g. during a migration) but the serial number
                                             and optionally the start date, end date or subject is known.
 
-     -S <subject>                           Certificate subject.
-     --subject=<subject>
+     --subject=<subject>                    Certificate subject.
 
-     -s <start>                             Start of the certificates validity period.
-     --start=<start>                        <start> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
+     --start=<start>                        Start of the certificates validity period.
+                                            <start> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
                                             string in the format YYYYMMDDhhmmssZ
 
-     -e <end>                               End of the certificates validity period.
-     --end=<end>                            <end> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
+     --end=<end>                            End of the certificates validity period.
+                                            <end> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
                                             string in the format YYYYMMDDhhmmssZ
 `
 
@@ -343,8 +342,7 @@ const HelpTextBackup = `
                                             If no output file (option -o) has been given it will be written
                                             to standard output.
 
-     -o <output>                            Write database dump to <output> instead of standard out.
-     --output=<output>
+     --output=<output>                      Write database dump to <output> instead of standard out.
 `
 
 // HelpTextDelete - help text for delete
@@ -362,8 +360,7 @@ const HelpTextExport = `
                                             The certificate will be written to standard output or to a file if
                                             the -o option is used.
 
-     -o <output>                            Write certificate to <output> instead of standard out.
-     --output=<output>
+     --output=<output>                      Write certificate to <output> instead of standard out.
 `
 
 // HelpTextGenCRL - help text for gencrl
@@ -372,16 +369,15 @@ const HelpTextGenCRL = `
                                             certificates. The certificate revocation list will be written to standard
                                             output or to a file if -o is used.
 
-     -o <output>                            Write revocation list to <output> instead of standard output.
-     --output=<output>
+     --output=<output>                      Write revocation list to <output> instead of standard output.
 `
 
 // HelpTextHealthcheck - help text for healthcheck
 const HelpTextHealthcheck = `
    healthcheck                              Verify integrity of the stored certifiate data.
 
-   -f                                       Fix errors. Stored data will be replaced with data from the certifiate
-   --fix                                    stored in the database.
+   --fix                                    Fix errors. Stored data will be replaced with data from the certifiate
+                                            stored in the database.
 `
 
 // HelpTextHousekeeping - help text for housekeeping
@@ -390,11 +386,10 @@ const HelpTextHousekeeping = `
                                             for expiration, renew auto renewable certificates (if option -a is used).
                                             This should be run at regular intervals.
 
-     -a                                     Renew auto renawable certificates that will expire.
-     --auto-renew
+     --auto-renew                           Renew auto renawable certificates that will expire.
 
-     -p <period>                            New validity period for auto renewed certificate.
-     --period=<period>                      Default is the value given on import that has been stored in the backend.
+     --period=<period>                      New validity period for auto renewed certificate.
+                                            Default is the value given on import that has been stored in the backend.
 `
 
 // HelpTextImport - help text for import
@@ -402,20 +397,20 @@ const HelpTextImport = `
    import                                   Import a certificate. If a file name is given it will be read
                                             from the file, otherwise it will be read from standard input.
 
-     -a                                     Mark certificate as autorenwable.
-     --auto-renew                           The "housekeeping" command will take care of this
+     --auto-renew                           Mark certificate as autorenwable.
+                                            The "housekeeping" command will take care of this
 
-     -c <csr>                               Certificate signing request used for certificate
-     --csr=<csr>                            creation. Optional.
+     --csr=<csr>                            Certificate signing request used for certificate
+                                            creation will be read from <csr>. Optional.
 
-     -d <delta_period>                      For auto renewable certificates the auto renew process starts if the time
-     --delta=<delta_period>                 til expiration is less than <delta_period> days.
+     --delta=<delta_period>                 For auto renewable certificates the auto renew process starts if the time
+                                            til expiration is less than <delta_period> days.
 
-     -p <period>                            New validity period for auto renewed certificate.
-     --period=<period>                      Default is the value given in the configuration file as validity_period.
+     --period=<period>                      New validity period for auto renewed certificate.
+                                            Default is the value given in the configuration file as validity_period.
 
-     -r <reason>,<time>                     Mark certificate as revoked. Optional.
-     --revoked=<reason>,<time>              <time> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
+     --revoked=<reason>,<time>              Mark certificate as revoked. Optional.
+                                            <time> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
                                             string in the format YYYYMMDDhhmmssZ
                                             <reason> can be one of:
                                             unspecified, keyCompromise, CACompromise, affiliationChanged,
@@ -428,27 +423,24 @@ const HelpTextList = `
    list                                     List serial numbers of certificates.
                                             The list will be written to standard out if the option -o is not used.
 
-     -e                                     List serial numbers of expired certificates.
-     --expired
+     --expired                              List serial numbers of expired certificates.
 
-     -i                                     List serial numbers of invalid certificates.
-     --invalid                              Certficates are considered invalid if their notBefore time is in the future.
+     --invalid                              List serial numbers of invalid certificates.
+                                            Certficates are considered invalid if their notBefore time is in the future.
 
-     -h                                     Print serial number as hexadecimal number.
-     --hex
+     --hex                                  Print serial number as hexadecimal number.
 
-     -o <output>                            Write serial numbers of listed certificate to <output> instead to standard
-     --output=<output>                      output.
+     --output=<output>                      Write serial numbers of listed certificate to <output> instead to standard
+                                            output.
 
-     -r                                     List serial numbers of revoked certificates.
-     --revoked
+     --revoked                              List serial numbers of revoked certificates.
 
-     -t                                     List "certificates" marked as temporary,
-     --temporary                            Temporary certficates are dummy settings used to "lock" serial numbers
+     --temporary                            List "certificates" marked as temporary,
+                                            Temporary certficates are dummy settings used to "lock" serial numbers
                                             during signing of a certificate signing request.
 
-     -v                                     List serial numbers of valid certificates.
-     --valid                                A certificates is considered valid if it is not temporary, not revoked,
+     --valid                                List serial numbers of valid certificates.
+                                            A certificates is considered valid if it is not temporary, not revoked,
                                             the validity period (notBefore .. notAfter) has started and the
                                             certificates is not expired.
 `
@@ -460,11 +452,10 @@ const HelpTextRenew = `
                                             The new certificate will be written to standard output or to a file if
                                             the -o option is used.
 
-     -o <output>                            Write new certificate to <output> instead of standard out
-     --output=<output>
+     --output=<output>                      Write new certificate to <output> instead of standard out
 
-     -p <period>                            New validity period for renewed certificate.
-     --period=<period>                      Default <validity_period> from configuration file.
+     --period=<period>                      New validity period for renewed certificate.
+                                            Default <validity_period> from configuration file.
 `
 
 // HelpTextRestore - help text for restore
@@ -480,19 +471,19 @@ const HelpTextRevoke = `
                                             be used. If not given on the command line it will be read from
                                             stdin.
 
-     -f                                     Revoke certificate by it's serial number event it is not present in the
-     --force                                database. A dummy entry will be inserted in the database and marked as
+     --force                                Revoke certificate by it's serial number event it is not present in the
+                                            database. A dummy entry will be inserted in the database and marked as
                                             revoked.
 
-     -r <reason>                            Set revocation reason for certificate.
-     --reason=<reason>                      <reason> can be one of:
+     --reason=<reason>                      Set revocation reason for certificate.
+                                            <reason> can be one of:
                                             unspecified, keyCompromise, CACompromise, affiliationChanged,
                                             superseded, cessationOfOperation, certificateHold, privilegeWithdrawn,
                                             removeFromCRL, aACompromise
                                             If no reasen is given, the default "unspecified" is used.
 
-     -R <date>                              Set revocation date for certificate.
-     --revocation-date=<date>               <revdate> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
+     --revocation-date=<date>               Set revocation date for certificate.
+                                            <revdate> is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME
                                             string in the format YYYYMMDDhhmmssZ.
                                             If not given, the current date will be used.
 `
@@ -511,21 +502,18 @@ const HelpTextSet = `
                                             The serial number of the certificate must be given on the command line or
                                             will be read from the standard input.
 
-     -A                                     Mark a certificate as auto renewable.
-     --auto-renew
+     --auto-renew                           Mark a certificate as auto renewable.
 
-     -P <period>                            Set auto renew start period in days. If there are less than <period> days
-     --auto-renew-start-period=<period>     left until certificate expiration it will be renewed. The "housekeeping"
+     --auto-renew-start-period=<period>     Set auto renew start period in days. If there are less than <period> days
+                                            left until certificate expiration it will be renewed. The "housekeeping"
                                             command will renew the certificate.
 
-     -V                                     Renew the certificate for <period> days. If not specified the setting
-     --auto-renew-validity-period=<period>  from the configuration file will be used.
+     --auto-renew-validity-period=<period>  Renew the certificate for <period> days. If not specified the setting
+                                            from the configuration file will be used.
 
-     -a                                     Remove auto renewable flag from certificate meta data.
-     --no-auto-renew
+     --no-auto-renew                        Remove auto renewable flag from certificate meta data.
 
-     -c <signing_request>                   Set certificate signing request.
-     --csr=<signing_request>
+     --csr=<signing_request>                Set certificate signing request, will be read from <signing_request>.
 `
 
 // HelpTextShow - help text for show
@@ -536,8 +524,7 @@ const HelpTextShow = `
                                             The certificate information will be written to standard output or to a
                                             file if the -o option is used.
 
-     -o <output>                            Write new certificate information to <output> instead of standard output.
-     --output=<output>
+     --output=<output>                      Write new certificate information to <output> instead of standard output.
 `
 
 // HelpTextSign - help text for sign
@@ -546,58 +533,56 @@ const HelpTextSign = `
                                             read, otherwise it will be read from stdin. Output will be written to
                                             stdout or to a file if -o option is used.
 
-     -E <extdata>                           X509 extension. Can be repeated for multiple extensions.
-     --extension=<extdata>                  Parameter <extdata> is a comma separated list of:
+     --extension=<extdata>                  X509 extension. Can be repeated for multiple extensions.
+                                            Parameter <extdata> is a comma separated list of:
                                             <name> - Name of the X509 extension
                                             <critical> - Critical flag. 0: False, 1: True
                                             <data> - data of the extension
 
-     -K <flags>                             Comma separated list of extended key usage bits.
-     --extended-keyusage=<flags>            Additionally dotted numeric OID are allowed too, e.g. 1.2.3.4.5
+     --extended-keyusage=<flags>            Comma separated list of extended key usage bits.
+                                            Additionally dotted numeric OID are allowed too, e.g. 1.2.3.4.5
                                             Known extended key usage bits are (defined in RFC 5280):
                                             serverAuth, clientAuth, codeSigning, emailProtection, timeStamping,
                                             msCodeInd, msCodeCom, msCTLSign, msSGC, nsSGC
 
 
-     -S <san>                                Comma separated list of subjectAltName extensions. Format of <san>
-    --san <san>                                is <type>:<value>. Supported <type> values are:
+     --san <san>                             Comma separated list of subjectAltName extensions. Format of <san>
+                                               is <type>:<value>. Supported <type> values are:
                                                 DNS   - DNS domain name
                                                 email - email address
                                                 IP    - IP address (IPv4 and IPv6)
                                                 URI   - URI
 
-     -a                                     Mark certificate as auto renewable.
-     --auto-renew                           The "housekeeping" command will take care of this
+     --auto-renew                           Mark certificate as auto renewable.
+                                            The "housekeeping" command will take care of this
 
-     -b <data>                              Set basic constraints. Only CA and pathlen are supported (see RFC 5280, Section 4.2.1.9)
-     --basic-constraint=<data>              flag on the basic constraints, e.g. -b CA:TRUE,pathlen:1 for
+     --basic-constraint=<data>              Set basic constraints. Only CA and pathlen are supported (see RFC 5280, Section 4.2.1.9)
+                                            flag on the basic constraints, e.g. -b CA:TRUE,pathlen:1 for
                                             a CA certificate with a maximal path length of 1.
                                             Note: In accordance with RFC 5280 pathlen constraint can only be set if CA constraint is set
                                             and keyusage includes keyCertSign.
 
-     -k <flags>                             Comma separated list of keyUsage bits. As defined in RFC 5280, Section 4.2.1.3
-     --keyusage=<flags>                     the critical flag is always true.
+     --keyusage=<flags>                     Comma separated list of keyUsage bits. As defined in RFC 5280, Section 4.2.1.3
+                                            the critical flag is always true.
                                             Known keyUsage bits according to RFC 5280 are:
                                             digitalSignature, nonRepudiation (or contentCommitment), keyEncipherment,
                                             dataEncipherment, keyAgreement, keyCertSign, cRLSign, encipherOnly,
                                             decipherOnly (see RFC 5280, Section 4.2.1.3 "Key Usage" for futher details).
 
-     -n                                     Don't store certificate data - except the serial number - in the database.
-     --no-register                          The serial number is ALWAYS stored in the backend to avoid conflicting
+     --no-register                          Don't store certificate data - except the serial number - in the database.
+                                            The serial number is ALWAYS stored in the backend to avoid conflicting
                                             serial numbers of certificates (especially if the serial numbers are
                                             generated using "increment" strategy).
 
-     -o <out>                               Write data to <outfile> instead of stdout
-     --output=<out>
+     --output=<out>                         Write data to <outfile> instead of stdout
 
-     -s <start>                             Validity of the new certificate starts in startin days.
-     --start-in=<start>                     Default: now
+     --start-in=<start>                     Validity of the new certificate starts in startin days.
+                                            Default: now
 
-     -t <template>                          Use a template file for certificate signing.
-     --template=<template>
+     --template=<template>                  Use a template file for certificate signing.
 
-     -v <validfor>                          New certificate will be valid for validfor days.
-     --valid-for=<validfor>                 Default ist the defined validity_period in the configuration or the
+     --valid-for=<validfor>                 New certificate will be valid for validfor days.
+                                            Default ist the defined validity_period in the configuration or the
                                             template file.
 `
 
@@ -631,17 +616,15 @@ var HelpTextMap = map[string]string{
 // HelpText - Help text
 const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<commandoptions>]
 
-  -V                                        Shows version.
-  --version
+  --version                                 Shows version.
 
-  -c <cfg>                                  Use configuration file instead of the default
-  --config=<cfg>                            Default: %s
+  --config=<cfg>                            Use configuration file instead of the default
+                                            Default: %s
 
-  -s <site>                                 Use configuration for <site>
-  --site=<site>                             Default: Use global configuration or default site (if set and not empty)
+  --site=<site>                             Use configuration for <site>
+                                            Default: Use global configuration or default site (if set and not empty)
 
-  -h                                        This text
-  --help
+  --help                                    This text
 
   Commands:
 `
