@@ -52,9 +52,9 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 	}
 
 	ar = &AutoRenew{
-		SerialNumber: ic.Certificate.SerialNumber,
-		Delta:        cfg.Global.AutoRenewStartPeriod,
-		Period:       cfg.Global.ValidityPeriod,
+		SerialNumber:         ic.Certificate.SerialNumber,
+		AutoRenewStartPeriod: cfg.Global.AutoRenewStartPeriod,
+		ValidityPeriod:       cfg.Global.ValidityPeriod,
 	}
 
 	if *autoRenew {
@@ -75,23 +75,26 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 
 	if *delta != 0 {
 		if *delta < 0 {
-			return fmt.Errorf("%s: Delta must be greater than 0", GetFrame())
+			return fmt.Errorf("%s: AutoRenewStartPeriod must be greater than 0", GetFrame())
 		}
 		if ic.AutoRenew == nil {
 			ic.AutoRenew = ar
 		}
-		ic.AutoRenew.Delta = *delta
+		ic.AutoRenew.AutoRenewStartPeriod = *delta
 	}
 
 	if *period != 0 {
 		if *period < 0 {
-			return fmt.Errorf("%s: Period must be greater than 0", GetFrame())
+			return fmt.Errorf("%s: ValidityPeriod must be greater than 0", GetFrame())
 		}
 		if ic.AutoRenew == nil {
 			ic.AutoRenew = ar
 		}
-		ic.AutoRenew.Period = *period
+		ic.AutoRenew.ValidityPeriod = *period
 	}
+
+	ic.AutoRenew.AutoRenewStartPeriod *= 86400
+	ic.AutoRenew.ValidityPeriod *= 86400
 
 	if *revoked != "" {
 		_revoked := strings.Split(*revoked, ",")

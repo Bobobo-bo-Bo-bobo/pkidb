@@ -143,8 +143,8 @@ func PrintCertificateInformation(ci *CertificateInformation) string {
 
 	if ci.AutoRenewable != nil {
 		out += fmt.Sprintf("Auto renewable: True\n")
-		out += fmt.Sprintf(" * Auto renew starts before expiration: %s\n", PrintInterval(float64(ci.AutoRenewable.Delta)))
-		out += fmt.Sprintf(" * Auto renew for: %s\n", PrintInterval(float64(ci.AutoRenewable.Period)))
+		out += fmt.Sprintf(" * Auto renew starts before expiration: %s\n", PrintInterval(float64(ci.AutoRenewable.AutoRenewStartPeriod)))
+		out += fmt.Sprintf(" * Auto renew for: %s\n", PrintInterval(float64(ci.AutoRenewable.ValidityPeriod)))
 	} else {
 		out += fmt.Sprintf("Auto renewable: False\n")
 	}

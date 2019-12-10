@@ -107,9 +107,9 @@ func CmdSet(cfg *PKIConfiguration, args []string) error {
 			}
 
 			ar := &AutoRenew{
-				SerialNumber: serial,
-				Delta:        renewPeriod,
-				Period:       renewStart,
+				SerialNumber:         serial,
+				AutoRenewStartPeriod: renewStart * 86400,
+				ValidityPeriod:       renewPeriod * 86400,
 			}
 
 			err = cfg.DBBackend.StoreAutoRenew(cfg, ar)

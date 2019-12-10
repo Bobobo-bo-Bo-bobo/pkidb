@@ -172,9 +172,9 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		}
 		if sr.AutoRenew {
 			ar := &AutoRenew{
-				SerialNumber: cert.SerialNumber,
-				Delta:        cfg.Global.AutoRenewStartPeriod,
-				Period:       cfg.Global.ValidityPeriod,
+				SerialNumber:         cert.SerialNumber,
+				AutoRenewStartPeriod: cfg.Global.AutoRenewStartPeriod * 86400,
+				ValidityPeriod:       cfg.Global.ValidityPeriod * 86400,
 			}
 			ci.AutoRenew = ar
 		}

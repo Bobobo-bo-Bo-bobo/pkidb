@@ -359,7 +359,7 @@ func (db PKIDBBackendPgSQL) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRene
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	_, err = tx.Exec("UPDATE certificate SET auto_renewable=$1, auto_renew_start_period=$2, auto_renew_validity_period=$3 WHERE serial_number=$4;", true, auto.Period, auto.Delta, sn)
+	_, err = tx.Exec("UPDATE certificate SET auto_renewable=$1, auto_renew_start_period=$2, auto_renew_validity_period=$3 WHERE serial_number=$4;", true, auto.AutoRenewStartPeriod, auto.ValidityPeriod, sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -709,14 +709,14 @@ func (db PKIDBBackendPgSQL) GetCertificateInformation(cfg *PKIConfiguration, ser
 	if autoRenew {
 		ar := &AutoRenew{}
 		if autoRenewStart != nil {
-			ar.Delta = *autoRenewStart * 86400
+			ar.AutoRenewStartPeriod = *autoRenewStart
 		} else {
-			ar.Delta = cfg.Global.AutoRenewStartPeriod * 86400
+			ar.AutoRenewStartPeriod = cfg.Global.AutoRenewStartPeriod * 86400
 		}
 		if autoRenewPeriod != nil {
-			ar.Period = *autoRenewPeriod * 86400
+			ar.ValidityPeriod = *autoRenewPeriod
 		} else {
-			ar.Period = cfg.Global.ValidityPeriod * 86400
+			ar.ValidityPeriod = cfg.Global.ValidityPeriod * 86400
 		}
 		result.AutoRenewable = ar
 	}

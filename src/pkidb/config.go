@@ -119,9 +119,9 @@ type ImportCertificate struct {
 
 // AutoRenew - auto renew certificates
 type AutoRenew struct {
-	SerialNumber *big.Int
-	Delta        int // AutoRenewStartPeriod
-	Period       int // ValidityPeriod
+	SerialNumber         *big.Int
+	AutoRenewStartPeriod int
+	ValidityPeriod       int
 }
 
 // RevokeRequest - Revocation request

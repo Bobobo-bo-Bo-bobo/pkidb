@@ -389,7 +389,7 @@ func (db PKIDBBackendSQLite3) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRe
 	}
 	defer upd.Close()
 
-	_, err = upd.Exec(true, auto.Period, auto.Delta, sn)
+	_, err = upd.Exec(true, auto.AutoRenewStartPeriod, auto.ValidityPeriod, sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -826,14 +826,14 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	if autoRenew {
 		ar := &AutoRenew{}
 		if autoRenewStart != nil {
-			ar.Delta = *autoRenewStart * 86400
+			ar.AutoRenewStartPeriod = *autoRenewStart
 		} else {
-			ar.Delta = cfg.Global.AutoRenewStartPeriod * 86400
+			ar.AutoRenewStartPeriod = cfg.Global.AutoRenewStartPeriod * 86400
 		}
 		if autoRenewPeriod != nil {
-			ar.Period = *autoRenewPeriod * 86400
+			ar.ValidityPeriod = *autoRenewPeriod
 		} else {
-			ar.Period = cfg.Global.ValidityPeriod * 86400
+			ar.ValidityPeriod = cfg.Global.ValidityPeriod * 86400
 		}
 		result.AutoRenewable = ar
 	}
