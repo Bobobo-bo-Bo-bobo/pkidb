@@ -40,6 +40,8 @@ func setConfigurationGlobal(cfg *PKIConfiguration, key string, value string) err
 			return fmt.Errorf("%s: Can't convert %s to a number: %s", GetFrame(), value, err.Error())
 		}
 		cfg.Global.CrlValidityPeriod = int(v)
+	case "default_site":
+		cfg.Global.DefaultSite = value
 	case "digest":
 		cfg.Global.Digest = value
 	case "list_as_hex":
@@ -62,6 +64,8 @@ func setConfigurationGlobal(cfg *PKIConfiguration, key string, value string) err
 		}
 	case "serial_number":
 		cfg.Global.SerialNumber = value
+	case "sites":
+		cfg.Global.Sites = value
 	case "validity_period":
 		v, err := strconv.Atoi(value)
 		if err != nil {
