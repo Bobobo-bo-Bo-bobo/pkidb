@@ -1294,7 +1294,7 @@ func (db PKIDBBackendPgSQL) GetRevokedCertificates(cfg *PKIConfiguration) ([]Rev
 
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
-        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	srows, err := tx.Query("SELECT serial_number, revocation_date, revocation_reason FROM certificate WHERE state=$1;", PKICertificateStatusRevoked)
