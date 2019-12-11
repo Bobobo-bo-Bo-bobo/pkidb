@@ -22,6 +22,7 @@ type PKIConfiguration struct {
 // GlobalConfiguration - Global configration (section global from ini file)
 type GlobalConfiguration struct {
 	CaPublicKey          string `ini:"ca_public_key"`
+	CaCertificate        string `ini:"ca_certificate"`
 	CaPrivateKey         string `ini:"ca_private_key"`
 	CaPassphrase         string `ini:"ca_passphrase"`
 	Digest               string `ini:"digest"`
@@ -29,9 +30,10 @@ type GlobalConfiguration struct {
 	ValidityPeriod       int64  `ini:"validity_period"`
 	AutoRenewStartPeriod int64  `ini:"auto_renew_start_period"`
 	CrlPublicKey         string `ini:"crl_public_key"`
+	CrlCertificate       string `ini:"crl_certificate"`
 	CrlPrivateKey        string `ini:"crl_private_key"`
 	CrlPassphrase        string `ini:"crl_passphrase"`
-	CrlValidtyPeriod     int    `ini:"crl_validity_period"`
+	CrlValidityPeriod    int    `ini:"crl_validity_period"`
 	CrlDigest            string `ini:"crl_digest"`
 	ListAsHex            bool   `ini:"list_as_hex"`
 	Backend              string `ini:"backend"`

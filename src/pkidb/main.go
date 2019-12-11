@@ -58,6 +58,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Can't parse configuration file: %s\n", err)
 		os.Exit(1)
 	}
+
+	err = MergeEnvironment(config)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
 	command = trailingArguments[0]
 	switch command {
 	case "add-dummy":

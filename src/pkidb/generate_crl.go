@@ -21,7 +21,7 @@ func GenerateCRL(cfg *PKIConfiguration) ([]byte, error) {
 		return nil, err
 	}
 
-	crlExpire = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(cfg.Global.CrlValidtyPeriod))
+	crlExpire = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(cfg.Global.CrlValidityPeriod))
 
 	crl, err := cfg.CRLPublicKey.CreateCRL(rand.Reader, cfg.CRLCertificate.PrivateKey, revlist, time.Now(), crlExpire)
 	if err != nil {

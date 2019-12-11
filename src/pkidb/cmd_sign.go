@@ -80,8 +80,8 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		if templateContent.Global.AutoRenewStartPeriod != 0 {
 			cfg.Global.AutoRenewStartPeriod = templateContent.Global.AutoRenewStartPeriod
 		}
-		if templateContent.Global.CrlValidtyPeriod != 0 {
-			cfg.Global.CrlValidtyPeriod = templateContent.Global.CrlValidtyPeriod
+		if templateContent.Global.CrlValidityPeriod != 0 {
+			cfg.Global.CrlValidityPeriod = templateContent.Global.CrlValidityPeriod
 		}
 		if templateContent.Global.CrlDigest != "" {
 			cfg.Global.CrlDigest = templateContent.Global.CrlDigest
