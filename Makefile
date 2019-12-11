@@ -2,6 +2,7 @@ GOPATH	= $(CURDIR)
 BINDIR	= $(CURDIR)/bin
 DOCDIR	= $(CURDIR)/doc
 ETCDIR	= $(CURDIR)/examples
+DBDIR	= $(CURDIR)/sql
 
 PROGRAMS = pkidb
 
@@ -38,6 +39,11 @@ install-man:
 install-etc:
 	install -m 0644 $(ETCDIR)/config.ini.example $(DESTDIR)/etc/pkidb
 	install -m 0644 $(ETCDIR)/template.example $(DESTDIR)/etc/pkidb
+
+install-sql:
+	install -m 0644 $(DBDIR)/mysql/mysql.sql $(DESTDIR)/usr/share/pkidb/initialisation
+	install -m 0644 $(DBDIR)/pgsql/pgsql.sql $(DESTDIR)/usr/share/pkidb/initialisation
+	install -m 0644 $(DBDIR)/sqlite/sqlite.sql $(DESTDIR)/usr/share/pkidb/initialisation
 
 clean:
 	/bin/rm -f bin/pkidb
