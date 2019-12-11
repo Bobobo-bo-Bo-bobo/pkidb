@@ -1919,6 +1919,8 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 					Revoked:     certinfo.Revoked,
 					CSR:         oldCSR,
 				}
+				imp.AutoRenew.SerialNumber = serial
+
 				err = db.StoreCertificate(cfg, imp, true)
 				if err != nil {
 					tx.Rollback()
