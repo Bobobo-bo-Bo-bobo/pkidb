@@ -1,0 +1,104 @@
+# make sure to set correct access rights to this
+# file as it contains critical information!
+
+[global]
+# list of sites and their configuration files
+# if empty or not set the global configuration will be used
+# format: <site_name>:/path/to/site/config/file ...
+# site names should only contain digits, letters, -, _, .
+# 
+# site configuration will be merged with global configuration
+sites = "site1:/etc/pkidb/sites/site1.ini site.remote:/etc/pkidb/sites/remote.site.ini"
+
+# default_site is the site configuration to use if no site is requested
+# on the command line. default_site and its configuration
+# file must be defined in the site variable
+default_site = "site1"
+
+# back end - to store data
+# 
+# mysql - MySQL
+# sqlite3 - SQLite3
+# pgsql - PostgreSQL
+backend = pgsql
+
+# path to public and private ca key
+# and the passphrase protecting it.
+ca_public_key = /path/to/public/ca/certificate
+; alternative:
+; ca_certificate = /path/to/public/ca/certificate
+ca_private_key = /path/to/private/ca/certificate
+ca_passphrase = ItsSoFluffyImGonnaDie!
+
+
+# default message digest to use when signing certificates
+# see man 1 dgst for supported digest algorithm
+digest = sha512
+
+# use random serial number for certificates (random) or increment
+# the serial number (increment)
+serial_number = random
+
+# default validity period for new certificates
+validity_period = 1095
+
+# renew automatically renewable certificates if less than auto_renew_start_period days left
+auto_renew_start_period = 1
+
+# path to crl signing certificate and private
+# key and the passphrase protecting it
+crl_public_key = /path/to/public/crl/certificate
+; alternative:
+; crl_certificate = /path/to/public/crl/certificate
+crl_private_key = /path/to/private/crl/certificate
+crl_passphrase = AssembleTheMinions!
+
+# number of days before the next crl is due
+crl_validity_period = 30
+
+# message digest to use for crl signing
+crl_digest = sha512
+
+# show serial numbers in "list" output as hexadecimal values
+# default: false
+list_as_hex = True
+
+[logging]
+# format:
+# <user_defined_string>=<level>,<destination>:<option>
+# 
+# destination: file
+# 
+# option - absolute path to filename
+#
+# destination: syslog
+#
+# option - facility
+# 
+log_warn_to_file=warning,file:/var/log/pkidb.log
+log_to_syslog=info,syslog:user
+
+# Back end configurations
+[pgsql]
+host = 127.0.0.1
+port = 5432
+user = dbuser
+passphrase = DoesThisCountAsAnnoying?
+database = pkidb
+sslmode = prefer
+sslcacert = /path/to/ca
+; sslcert = /path/to/client/cert
+; sslkey = /path/to/client/key
+
+[sqlite3]
+database = /path/to/sqlite/file
+
+[mysql]
+host = 127.0.0.1
+port = 3306
+user = dbuser
+passphrase = DoesThisCountAsAnnoying?
+database = pkidb
+sslcacert = /path/to/ca
+sslcert = /path/to/client/cert
+sslkey = /path/to/client/key
