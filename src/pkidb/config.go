@@ -26,8 +26,8 @@ type GlobalConfiguration struct {
 	CaPassphrase         string `ini:"ca_passphrase"`
 	Digest               string `ini:"digest"`
 	SerialNumber         string `ini:"serial_number"`
-	ValidityPeriod       int    `ini:"validity_period"`
-	AutoRenewStartPeriod int    `ini:"auto_renew_start_period"`
+	ValidityPeriod       int64  `ini:"validity_period"`
+	AutoRenewStartPeriod int64  `ini:"auto_renew_start_period"`
 	CrlPublicKey         string `ini:"crl_public_key"`
 	CrlPrivateKey        string `ini:"crl_private_key"`
 	CrlPassphrase        string `ini:"crl_passphrase"`
@@ -120,8 +120,8 @@ type ImportCertificate struct {
 // AutoRenew - auto renew certificates
 type AutoRenew struct {
 	SerialNumber         *big.Int
-	AutoRenewStartPeriod int
-	ValidityPeriod       int
+	AutoRenewStartPeriod int64
+	ValidityPeriod       int64
 }
 
 // RevokeRequest - Revocation request
@@ -169,10 +169,10 @@ type JSONSignatureAlgorithm struct {
 // JSONCertificate - "certificate" from JSON
 type JSONCertificate struct {
 	RevocationDate          *float64 `json:"revocation_date"`
-	AutoRenewValidityPeriod *int     `json:"auto_renew_validity_period"`
+	AutoRenewValidityPeriod *int64   `json:"auto_renew_validity_period"`
 	Certificate             string   `json:"certificate"`
 	EndDate                 *int64   `json:"end_date"`
-	AutoRenewStartPeriod    *int     `json:"auto_renew_start_period"`
+	AutoRenewStartPeriod    *int64   `json:"auto_renew_start_period"`
 	Extension               []string `json:"extension"`
 	SignatureAlgorithmID    *int     `json:"signature_algorithm_id"`
 	RevocationReason        *int     `json:"revocation_reason"`

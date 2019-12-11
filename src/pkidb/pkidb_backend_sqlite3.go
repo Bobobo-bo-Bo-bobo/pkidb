@@ -718,8 +718,8 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	var subject string
 	var issuer *string
 	var autoRenew bool
-	var autoRenewStart *int
-	var autoRenewPeriod *int
+	var autoRenewStart *int64
+	var autoRenewPeriod *int64
 	var fpMD5 *string
 	var fpSHA1 *string
 	var cert *string
@@ -1563,7 +1563,7 @@ func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]R
 	}
 	tx.Commit()
 
-	return result, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	return result, nil
 
 }
 

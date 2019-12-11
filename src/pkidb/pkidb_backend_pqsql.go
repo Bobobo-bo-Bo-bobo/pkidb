@@ -192,7 +192,7 @@ func (db PKIDBBackendPgSQL) StoreCertificateSigningRequest(cfg *PKIConfiguration
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
-			_, err = tx.Exec("UPDATE certificate SET signing_request=? WHERE serial_number=$1;", hash, sn)
+			_, err = tx.Exec("UPDATE certificate SET signing_request=$1 WHERE serial_number=$2;", hash, sn)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -274,7 +274,7 @@ func (db PKIDBBackendPgSQL) StoreCertificate(cfg *PKIConfiguration, cert *Import
 		}
 
 		if cert.DummyNotBefore != nil {
-			_, err = tx.Exec("UPDATE certificate SET start_date=? WHERE serial_number=$1;", *cert.DummyNotBefore, sn)
+			_, err = tx.Exec("UPDATE certificate SET start_date=$1 WHERE serial_number=$2;", *cert.DummyNotBefore, sn)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -282,7 +282,7 @@ func (db PKIDBBackendPgSQL) StoreCertificate(cfg *PKIConfiguration, cert *Import
 		}
 
 		if cert.DummyNotAfter != nil {
-			_, err = tx.Exec("UPDATE certificate SET end_date=? WHERE serial_number=$1;", *cert.DummyNotAfter, sn)
+			_, err = tx.Exec("UPDATE certificate SET end_date=$1 WHERE serial_number=$2;", *cert.DummyNotAfter, sn)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -608,8 +608,8 @@ func (db PKIDBBackendPgSQL) GetCertificateInformation(cfg *PKIConfiguration, ser
 	var subject string
 	var issuer *string
 	var autoRenew bool
-	var autoRenewStart *int
-	var autoRenewPeriod *int
+	var autoRenewStart *float64
+	var autoRenewPeriod *float64
 	var fpMD5 *string
 	var fpSHA1 *string
 	var cert *string
@@ -630,7 +630,7 @@ func (db PKIDBBackendPgSQL) GetCertificateInformation(cfg *PKIConfiguration, ser
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	err = tx.QueryRow("SELECT version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate WHERE serial_number=$1;", sn).Scan(&version, &sd, &ed, &subject, &autoRenew, &autoRenewStart, &autoRenewPeriod, &issuer, &keySize, &fpMD5, &fpSHA1, &cert, &sigAlgo, pq.Array(&ext), &csr, &state, &rd, &revReason)
+	err = tx.QueryRow("SELECT version, start_date, end_date, subject, auto_renewable, EXTRACT(EPOCH FROM auto_renew_start_period), EXTRACT(EPOCH FROM auto_renew_validity_period), issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate WHERE serial_number=$1;", sn).Scan(&version, &sd, &ed, &subject, &autoRenew, &autoRenewStart, &autoRenewPeriod, &issuer, &keySize, &fpMD5, &fpSHA1, &cert, &sigAlgo, pq.Array(&ext), &csr, &state, &rd, &revReason)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -709,12 +709,12 @@ func (db PKIDBBackendPgSQL) GetCertificateInformation(cfg *PKIConfiguration, ser
 	if autoRenew {
 		ar := &AutoRenew{}
 		if autoRenewStart != nil {
-			ar.AutoRenewStartPeriod = *autoRenewStart
+			ar.AutoRenewStartPeriod = int64(*autoRenewStart)
 		} else {
 			ar.AutoRenewStartPeriod = cfg.Global.AutoRenewStartPeriod * 86400
 		}
 		if autoRenewPeriod != nil {
-			ar.ValidityPeriod = *autoRenewPeriod
+			ar.ValidityPeriod = int64(*autoRenewPeriod)
 		} else {
 			ar.ValidityPeriod = cfg.Global.ValidityPeriod * 86400
 		}
@@ -955,6 +955,8 @@ func (db PKIDBBackendPgSQL) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, 
 	var sdateptr *string
 	var edateptr *string
 	var rdateptr *string
+	var autorenewstartperiod *float64
+	var autorenewvalidityperiod *float64
 
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
@@ -962,7 +964,7 @@ func (db PKIDBBackendPgSQL) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, 
 	}
 
 	// Certificates
-	crows, err := tx.Query("SELECT serial_number, version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate;")
+	crows, err := tx.Query("SELECT serial_number, version, start_date, end_date, subject, auto_renewable, EXTRACT(EPOCH FROM auto_renew_start_period), EXTRACT(EPOCH FROM auto_renew_validity_period), issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate;")
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -971,7 +973,7 @@ func (db PKIDBBackendPgSQL) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, 
 
 	for crows.Next() {
 		jcert := JSONCertificate{}
-		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &sdateptr, &edateptr, &jcert.Subject, &jcert.AutoRenewable, &jcert.AutoRenewStartPeriod, &jcert.AutoRenewValidityPeriod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &rdateptr, &jcert.RevocationReason)
+		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &sdateptr, &edateptr, &jcert.Subject, &jcert.AutoRenewable, &autorenewstartperiod, &autorenewvalidityperiod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &rdateptr, &jcert.RevocationReason)
 		if err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1017,6 +1019,15 @@ func (db PKIDBBackendPgSQL) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, 
 			for _, e := range strings.Split(*extptr, ",") {
 				jcert.Extension = append(jcert.Extension, e)
 			}
+		}
+
+		if autorenewstartperiod != nil {
+			t := int64(*autorenewstartperiod)
+			jcert.AutoRenewStartPeriod = &t
+		}
+		if autorenewvalidityperiod != nil {
+			t := int64(*autorenewvalidityperiod)
+			jcert.AutoRenewValidityPeriod = &t
 		}
 
 		dump.Certificates = append(dump.Certificates, jcert)
@@ -1260,7 +1271,7 @@ func (db PKIDBBackendPgSQL) LockSerialNumber(cfg *PKIConfiguration, serial *big.
 	}
 
 	if force {
-		_, err = tx.Exec("UPDATE certificate SET state=? WHERE serial_number=$1;", state, sn)
+		_, err = tx.Exec("UPDATE certificate SET state=$1 WHERE serial_number=$2;", state, sn)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1283,7 +1294,7 @@ func (db PKIDBBackendPgSQL) GetRevokedCertificates(cfg *PKIConfiguration) ([]Rev
 
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+        return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	srows, err := tx.Query("SELECT serial_number, revocation_date, revocation_reason FROM certificate WHERE state=$1;", PKICertificateStatusRevoked)
@@ -1338,7 +1349,7 @@ func (db PKIDBBackendPgSQL) GetRevokedCertificates(cfg *PKIConfiguration) ([]Rev
 	}
 	tx.Commit()
 
-	return result, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	return result, nil
 
 }
 
@@ -1561,8 +1572,8 @@ func (db PKIDBBackendPgSQL) DeleteAutoRenew(cfg *PKIConfiguration, serial *big.I
 func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, period int) error {
 	var sn string
 	var dstr string
-	var startPeriod int64
-	var validPeriod int64
+	var startPeriod float64
+	var validPeriod float64
 	var serial *big.Int
 	var newEnd time.Time
 	var oldCSR *x509.CertificateRequest
@@ -1573,7 +1584,7 @@ func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, 
 	}
 
 	if autoRenew {
-		arows, err := tx.Query("SELECT serial_number, end_date, auto_renew_start_period, auto_renew_validity_period FROM certificate WHERE auto_renewable=True AND (state=$1 OR state=$2);", PKICertificateStatusValid, PKICertificateStatusExpired)
+		arows, err := tx.Query("SELECT serial_number, end_date, EXTRACT(EPOCH FROM auto_renew_start_period), EXTRACT(EPOCH FROM auto_renew_validity_period) FROM certificate WHERE auto_renewable=True AND (state=$1 OR state=$2);", PKICertificateStatusValid, PKICertificateStatusExpired)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1598,7 +1609,7 @@ func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, 
 		}
 
 		delta := time.Now().Sub(edate).Seconds()
-		if int64(delta) >= startPeriod {
+		if delta >= startPeriod {
 			serial = big.NewInt(0)
 			serial, ok := serial.SetString(sn, 10)
 			if !ok {

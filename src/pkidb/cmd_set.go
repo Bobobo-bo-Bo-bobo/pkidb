@@ -16,13 +16,13 @@ func CmdSet(cfg *PKIConfiguration, args []string) error {
 	var snList []string
 	var err error
 	var csr *x509.CertificateRequest
-	var renewStart int
-	var renewPeriod int
+	var renewStart int64
+	var renewPeriod int64
 
 	argParse := flag.NewFlagSet("cmd-set", flag.ExitOnError)
 	var autoRenew = argParse.Bool("auto-renew", false, "Mark a certificate as auto renewable")
-	var autoRenewStartPeriod = argParse.Int("auto-renew-start-period", 0, "Set auto renew start period in days")
-	var autoRenewValidityPeriod = argParse.Int("auto-renew-validity-period", 0, "Renew the certificate for <period> days")
+	var autoRenewStartPeriod = argParse.Int64("auto-renew-start-period", 0, "Set auto renew start period in days")
+	var autoRenewValidityPeriod = argParse.Int64("auto-renew-validity-period", 0, "Renew the certificate for <period> days")
 	var noAutoRenew = argParse.Bool("no-auto-renew", false, "Remove auto renewable argParse from certificate meta data")
 	var csrFile = argParse.String("csr", "", "Set certificate signing request")
 	argParse.Usage = showHelpSet
