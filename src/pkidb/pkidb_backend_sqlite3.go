@@ -1631,7 +1631,7 @@ func (db PKIDBBackendSQLite3) StoreState(cfg *PKIConfiguration, serial *big.Int,
 		return fmt.Errorf("%s: Invalid state %s", GetFrame(), state)
 	}
 
-	upd, err := tx.Prepare("UPDATE certifiate SET state=? WHERE serial_number=?;")
+	upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE serial_number=?;")
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())

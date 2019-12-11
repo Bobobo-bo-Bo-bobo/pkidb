@@ -1410,7 +1410,7 @@ func (db PKIDBBackendPgSQL) StoreState(cfg *PKIConfiguration, serial *big.Int, s
 		return fmt.Errorf("%s: Invalid state %s", GetFrame(), state)
 	}
 
-	_, err = tx.Exec("UPDATE certifiate SET state=$1 WHERE serial_number=$2;", st, sn)
+	_, err = tx.Exec("UPDATE certificate SET state=$1 WHERE serial_number=$2;", st, sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1657,6 +1657,8 @@ func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, 
 					Revoked:     certinfo.Revoked,
 					CSR:         oldCSR,
 				}
+				imp.AutoRenew.SerialNumber = serial
+
 				err = db.StoreCertificate(cfg, imp, true)
 				if err != nil {
 					tx.Rollback()

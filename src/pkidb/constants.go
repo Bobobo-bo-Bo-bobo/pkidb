@@ -377,9 +377,9 @@ const HelpTextGenCRL = `
 
 // HelpTextHealthcheck - help text for healthcheck
 const HelpTextHealthcheck = `
-   healthcheck                              Verify integrity of the stored certifiate data.
+   healthcheck                              Verify integrity of the stored certificate data.
 
-   --fix                                    Fix errors. Stored data will be replaced with data from the certifiate
+   --fix                                    Fix errors. Stored data will be replaced with data from the certifiacte
                                             stored in the database.
 `
 
