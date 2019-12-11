@@ -33,7 +33,22 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 	// [<database>]
 	switch config.Global.Backend {
 	case "mysql":
-		fallthrough
+		db, err := cfg.GetSection(config.Global.Backend)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
+		err = db.MapTo(&dbconfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		config.Database = &dbconfig
+		var mysql PKIDBBackendMySQL
+		err = mysql.Initialise(&config)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		config.DBBackend = mysql
 	case "pgsql":
 		db, err := cfg.GetSection(config.Global.Backend)
 		if err != nil {

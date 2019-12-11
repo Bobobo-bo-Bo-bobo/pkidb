@@ -10,21 +10,37 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/lib/pq"
 	"math/big"
 	"strings"
 	"time"
 )
 
-// PKIDBBackendSQLite3 - SQLite3 database
-type PKIDBBackendSQLite3 struct {
-	Database string
+// PKIDBBackendPgSQL - PgSQL database
+type PKIDBBackendPgSQL struct {
+	Host      string
+	Port      int
+	SSLMode   string
+	SSLCACert string
+	SSLCert   string
+	SSLKey    string
+	Username  string
+	Password  string
+	Database  string
 }
 
-// Initialise - Initialise SQLite3 database connection
-func (db PKIDBBackendSQLite3) Initialise(cfg *PKIConfiguration) error {
-	var one int
+// Initialise - Initialise PgSQL database connection
+func (db PKIDBBackendPgSQL) Initialise(cfg *PKIConfiguration) error {
+	var ok bool
 
+	db.Host = cfg.Database.Host
+	db.Port = cfg.Database.Port
+	db.SSLMode = cfg.Database.SSLMode
+	db.SSLCACert = cfg.Database.SSLCACert
+	db.SSLCert = cfg.Database.SSLCert
+	db.SSLKey = cfg.Database.SSLKey
+	db.Username = cfg.Database.User
+	db.Password = cfg.Database.Password
 	db.Database = cfg.Database.Database
 
 	_db, err := db.OpenDatabase(cfg)
@@ -32,13 +48,13 @@ func (db PKIDBBackendSQLite3) Initialise(cfg *PKIConfiguration) error {
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	err = _db.QueryRow("SELECT 1=1").Scan(&one)
+	err = _db.QueryRow("SELECT 1=1").Scan(&ok)
 	if err != nil {
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	// Should NEVER happen ;)
-	if one != 1 {
+	if !ok {
 		return fmt.Errorf("%s: Unexpected result from 'SELECT 1=1;'", GetFrame())
 	}
 
@@ -46,8 +62,62 @@ func (db PKIDBBackendSQLite3) Initialise(cfg *PKIConfiguration) error {
 	return nil
 }
 
+// OpenDatabase - Open database connection
+func (db PKIDBBackendPgSQL) OpenDatabase(cfg *PKIConfiguration) (*sql.DB, error) {
+	var _dsn string
+
+	if db.SSLCert != "" && db.SSLKey != "" {
+		_dsn = fmt.Sprintf("host=%s database=%s sslcert=%s sslkey=%s", db.Host, db.Database, db.SSLCert, db.SSLKey)
+	} else {
+		_dsn = fmt.Sprintf("host=%s database=%s user=%s password=%s", db.Host, db.Database, db.Username, db.Password)
+	}
+	// if host starts with '/' it is a socket
+	if db.Host[0] != '/' {
+		_dsn += fmt.Sprintf(" port=%d", db.Port)
+	}
+
+	if db.SSLMode != "" {
+		switch strings.ToLower(db.SSLMode) {
+		case "disable":
+			fallthrough
+		case "require":
+			fallthrough
+		case "verify-ca":
+			fallthrough
+		case "verify-full":
+			_dsn += " sslmode=" + strings.ToLower(db.SSLMode)
+		default:
+			return nil, fmt.Errorf("%s: Invalid sslmode for database connection", GetFrame())
+		}
+	}
+	if db.SSLCACert != "" {
+		_dsn += " sslrootcert=" + db.SSLCACert
+	}
+
+	dbhandle, err := sql.Open("postgres", _dsn)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+
+	return dbhandle, nil
+}
+
+// CloseDatabase - close database connection
+func (db PKIDBBackendPgSQL) CloseDatabase(h *sql.DB) error {
+	var err error
+
+	if h != nil {
+		err = h.Close()
+	}
+
+    if err != nil {
+        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+    }
+    return nil
+}
+
 // GetLastSerialNumber - get last serial number from database
-func (db PKIDBBackendSQLite3) GetLastSerialNumber(cfg *PKIConfiguration) (*big.Int, error) {
+func (db PKIDBBackendPgSQL) GetLastSerialNumber(cfg *PKIConfiguration) (*big.Int, error) {
 	var snString string
 	var sn *big.Int
 
@@ -73,7 +143,7 @@ func (db PKIDBBackendSQLite3) GetLastSerialNumber(cfg *PKIConfiguration) (*big.I
 }
 
 // IsFreeSerialNumber - check if serial number is not used
-func (db PKIDBBackendSQLite3) IsFreeSerialNumber(cfg *PKIConfiguration, serial *big.Int) (bool, error) {
+func (db PKIDBBackendPgSQL) IsFreeSerialNumber(cfg *PKIConfiguration, serial *big.Int) (bool, error) {
 	var _sn string
 
 	sn := serial.Text(10)
@@ -83,14 +153,7 @@ func (db PKIDBBackendSQLite3) IsFreeSerialNumber(cfg *PKIConfiguration, serial *
 		return false, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return false, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(sn).Scan(&_sn)
+	err = tx.QueryRow("SELECT serial_number FROM certificate WHERE serial_number=$1;", sn).Scan(&_sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Commit()
@@ -104,37 +167,13 @@ func (db PKIDBBackendSQLite3) IsFreeSerialNumber(cfg *PKIConfiguration, serial *
 }
 
 // IsUsedSerialNumber - check if serial number is already used
-func (db PKIDBBackendSQLite3) IsUsedSerialNumber(cfg *PKIConfiguration, serial *big.Int) (bool, error) {
+func (db PKIDBBackendPgSQL) IsUsedSerialNumber(cfg *PKIConfiguration, serial *big.Int) (bool, error) {
 	free, err := db.IsFreeSerialNumber(cfg, serial)
 	return !free, err
 }
 
-// OpenDatabase - Open database connection
-func (db PKIDBBackendSQLite3) OpenDatabase(cfg *PKIConfiguration) (*sql.DB, error) {
-	dbhandle, err := sql.Open("sqlite3", cfg.Database.Database)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-
-	return dbhandle, nil
-}
-
-// CloseDatabase - close database connection
-func (db PKIDBBackendSQLite3) CloseDatabase(h *sql.DB) error {
-	var err error
-
-	if h != nil {
-		err = h.Close()
-	}
-
-    if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-    }
-    return nil
-}
-
 // StoreCertificateSigningRequest - store CSR
-func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfiguration, ci *ImportCertificate) error {
+func (db PKIDBBackendPgSQL) StoreCertificateSigningRequest(cfg *PKIConfiguration, ci *ImportCertificate) error {
 	var _hash string
 
 	sn := ci.Certificate.SerialNumber.Text(10)
@@ -147,37 +186,16 @@ func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfigurati
 
 	hash := fmt.Sprintf("%x", sha256.Sum256(csr.Raw))
 
-	fetch, err := tx.Prepare("SELECT hash FROM signing_request WHERE hash=?")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer fetch.Close()
-
-	err = fetch.QueryRow(_hash).Scan(&_hash)
+	err = tx.QueryRow("SELECT hash FROM signing_request WHERE hash=$1", _hash).Scan(&_hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			insert, err := tx.Prepare("INSERT INTO signing_request (hash, request) VALUES (?, ?);")
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			defer insert.Close()
-
-			_, err = insert.Exec(hash, base64.StdEncoding.EncodeToString(csr.Raw))
+			_, err = tx.Exec("INSERT INTO signing_request (hash, request) VALUES ($1, $2);", hash, base64.StdEncoding.EncodeToString(csr.Raw))
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
-			upd, err := tx.Prepare("UPDATE certificate SET signing_request=? WHERE serial_number=?;")
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			defer upd.Close()
-
-			_, err = upd.Exec(hash, sn)
+			_, err = tx.Exec("UPDATE certificate SET signing_request=$1 WHERE serial_number=$2;", hash, sn)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -195,7 +213,7 @@ func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfigurati
 }
 
 // StoreCertificate - Store certificate in database
-func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *ImportCertificate, replace bool) error {
+func (db PKIDBBackendPgSQL) StoreCertificate(cfg *PKIConfiguration, cert *ImportCertificate, replace bool) error {
 	var algoid int
 
 	_md5 := fmt.Sprintf("%x", md5.Sum(cert.Certificate.Raw))
@@ -240,31 +258,18 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 	}
 
 	if already && replace {
-		del, err := tx.Prepare("DELETE FROM certificate WHERE serial_number=?;")
+		_, err = tx.Exec("DELETE FROM certificate WHERE serial_number=$1;", sn)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
-		_, err = del.Exec(sn)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-		del.Close()
 	}
 
 	if cert.IsDummy {
-		ins, err := tx.Prepare("INSERT INTO certificate (serial_number, version, state, subject) VALUES (?, ?, ?, ?);")
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-		defer ins.Close()
-
 		if cert.DummySubject == "" {
-			_, err = ins.Exec(sn, 0, state, DummyCertificateSubject)
+			_, err = tx.Exec("INSERT INTO certificate (serial_number, version, state, subject) VALUES ($1, $2, $3, $4);", sn, 0, state, DummyCertificateSubject)
 		} else {
-			_, err = ins.Exec(sn, 0, state, cert.DummySubject)
+			_, err = tx.Exec("INSERT INTO certificate (serial_number, version, state, subject) VALUES ($1, $2, $3, $4);", sn, 0, state, cert.DummySubject)
 		}
 		if err != nil {
 			tx.Rollback()
@@ -272,14 +277,7 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		}
 
 		if cert.DummyNotBefore != nil {
-			upd, err := tx.Prepare("UPDATE certificate SET start_date=? WHERE serial_number=?;")
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			defer upd.Close()
-
-			_, err = upd.Exec(*cert.DummyNotBefore, sn)
+			_, err = tx.Exec("UPDATE certificate SET start_date=$1 WHERE serial_number=$2;", *cert.DummyNotBefore, sn)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -287,14 +285,7 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		}
 
 		if cert.DummyNotAfter != nil {
-			upd, err := tx.Prepare("UPDATE certificate SET end_date=? WHERE serial_number=?;")
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			defer upd.Close()
-
-			_, err = upd.Exec(*cert.DummyNotAfter, sn)
+			_, err = tx.Exec("UPDATE certificate SET end_date=$1 WHERE serial_number=$2;", *cert.DummyNotAfter, sn)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -305,14 +296,7 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 		return nil
 	}
 
-	statement, err := tx.Prepare("INSERT INTO certificate (serial_number, version, start_date, end_date, subject, fingerprint_md5, fingerprint_sha1, certificate, state, issuer, signature_algorithm_id, keysize) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer statement.Close()
-
-	_, err = statement.Exec(sn, version, start, end, subject, _md5, _sha1, rawCert, state, issuer, algoid, length)
+	_, err = tx.Exec("INSERT INTO certificate (serial_number, version, start_date, end_date, subject, fingerprint_md5, fingerprint_sha1, certificate, state, issuer, signature_algorithm_id, keysize) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);", sn, version, start, end, subject, _md5, _sha1, rawCert, state, issuer, algoid, length)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -358,7 +342,7 @@ func (db PKIDBBackendSQLite3) StoreCertificate(cfg *PKIConfiguration, cert *Impo
 }
 
 // StoreAutoRenew - store auto-renew options
-func (db PKIDBBackendSQLite3) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRenew) error {
+func (db PKIDBBackendPgSQL) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRenew) error {
 	var _sn string
 
 	sn := auto.SerialNumber.Text(10)
@@ -368,14 +352,7 @@ func (db PKIDBBackendSQLite3) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRe
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(sn).Scan(&_sn)
+	err = tx.QueryRow("SELECT serial_number FROM certificate WHERE serial_number=$1;", sn).Scan(&_sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -385,14 +362,7 @@ func (db PKIDBBackendSQLite3) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRe
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	upd, err := tx.Prepare("UPDATE certificate SET auto_renewable=?, auto_renew_start_period=?, auto_renew_validity_period=? WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer upd.Close()
-
-	_, err = upd.Exec(true, auto.AutoRenewStartPeriod, auto.ValidityPeriod, sn)
+	_, err = tx.Exec("UPDATE certificate SET auto_renewable=$1, auto_renew_start_period=$2, auto_renew_validity_period=$3 WHERE serial_number=$4;", true, auto.AutoRenewStartPeriod, auto.ValidityPeriod, sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -403,7 +373,7 @@ func (db PKIDBBackendSQLite3) StoreAutoRenew(cfg *PKIConfiguration, auto *AutoRe
 }
 
 // StoreSignatureAlgorithm - store x509.SignatureAlgorithm name in database
-func (db PKIDBBackendSQLite3) StoreSignatureAlgorithm(cfg *PKIConfiguration, algo x509.SignatureAlgorithm) (int, error) {
+func (db PKIDBBackendPgSQL) StoreSignatureAlgorithm(cfg *PKIConfiguration, algo x509.SignatureAlgorithm) (int, error) {
 	name, found := SignatureAlgorithmNameMap[algo]
 	if !found {
 		return -1, fmt.Errorf("%s: Can't map x509.SignatureAlgorithm to a name", GetFrame())
@@ -413,7 +383,7 @@ func (db PKIDBBackendSQLite3) StoreSignatureAlgorithm(cfg *PKIConfiguration, alg
 }
 
 // StoreSignatureAlgorithmName - insert x509.SignatureAlgorithm name
-func (db PKIDBBackendSQLite3) StoreSignatureAlgorithmName(cfg *PKIConfiguration, name string) (int, error) {
+func (db PKIDBBackendPgSQL) StoreSignatureAlgorithmName(cfg *PKIConfiguration, name string) (int, error) {
 	var algoid int
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -421,35 +391,16 @@ func (db PKIDBBackendSQLite3) StoreSignatureAlgorithmName(cfg *PKIConfiguration,
 		return -1, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	statement, err := tx.Prepare("SELECT id FROM signature_algorithm WHERE algorithm=?;")
-	if err != nil {
-		tx.Rollback()
-		return -1, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer statement.Close()
-
-	err = statement.QueryRow(name).Scan(&algoid)
+	err = tx.QueryRow("SELECT id FROM signature_algorithm WHERE algorithm=$1;", name).Scan(&algoid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ins, err := tx.Prepare("INSERT INTO signature_algorithm (algorithm) VALUES (?);")
+			_, err = tx.Exec("INSERT INTO signature_algorithm (algorithm) VALUES ($1);", name)
 			if err != nil {
 				tx.Rollback()
 				return -1, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
-			_, err = ins.Exec(name)
-			if err != nil {
-				tx.Rollback()
-				return -1, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-
-			get, err := tx.Prepare("SELECT id FROM signature_algorithm WHERE algorithm=?;")
-			if err != nil {
-				tx.Rollback()
-				return -1, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-
-			err = get.QueryRow(name).Scan(&algoid)
+			err = tx.QueryRow("SELECT id FROM signature_algorithm WHERE algorithm=$1;", name).Scan(&algoid)
 			if err != nil {
 				tx.Rollback()
 				return -1, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -467,7 +418,7 @@ func (db PKIDBBackendSQLite3) StoreSignatureAlgorithmName(cfg *PKIConfiguration,
 }
 
 // SerialNumberAlreadyPresent - check if serial number is already present in the database
-func (db PKIDBBackendSQLite3) SerialNumberAlreadyPresent(cfg *PKIConfiguration, sn *big.Int) (bool, error) {
+func (db PKIDBBackendPgSQL) SerialNumberAlreadyPresent(cfg *PKIConfiguration, sn *big.Int) (bool, error) {
 	var _sn string
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -475,14 +426,7 @@ func (db PKIDBBackendSQLite3) SerialNumberAlreadyPresent(cfg *PKIConfiguration, 
 		return false, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	fetch, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return false, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer fetch.Close()
-
-	err = fetch.QueryRow(sn.Text(10)).Scan(&_sn)
+	err = tx.QueryRow("SELECT serial_number FROM certificate WHERE serial_number=$1;", sn.Text(10)).Scan(&_sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Commit()
@@ -497,7 +441,7 @@ func (db PKIDBBackendSQLite3) SerialNumberAlreadyPresent(cfg *PKIConfiguration, 
 }
 
 // StoreX509Extension - store x509.Extension in database
-func (db PKIDBBackendSQLite3) StoreX509Extension(cfg *PKIConfiguration, cert *ImportCertificate, extensions []pkix.Extension) error {
+func (db PKIDBBackendPgSQL) StoreX509Extension(cfg *PKIConfiguration, cert *ImportCertificate, extensions []pkix.Extension) error {
 	var _hash string
 	var pkey string
 	var data string
@@ -513,20 +457,6 @@ func (db PKIDBBackendSQLite3) StoreX509Extension(cfg *PKIConfiguration, cert *Im
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	check, err := tx.Prepare("SELECT hash FROM extension WHERE hash=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer check.Close()
-
-	ins, err := tx.Prepare("INSERT INTO extension (hash, name, critical, data) VALUES (?, ?, ?, ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer ins.Close()
-
 	for _, ext := range extensions {
 		name, found = OIDMap[ext.Id.String()]
 		if !found {
@@ -536,10 +466,10 @@ func (db PKIDBBackendSQLite3) StoreX509Extension(cfg *PKIConfiguration, cert *Im
 
 		// primary key is the sha512 hash of name+critical+Base64(data)
 		pkey = fmt.Sprintf("%x", sha512.Sum512([]byte(name+BoolToPythonString(ext.Critical)+data)))
-		err = check.QueryRow(pkey).Scan(&_hash)
+		err = tx.QueryRow("SELECT hash FROM extension WHERE hash=$1;", pkey).Scan(&_hash)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				_, err = ins.Exec(pkey, name, ext.Critical, data)
+				_, err = tx.Exec("INSERT INTO extension (hash, name, critical, data) VALUES ($1, $2, $3, $4);", pkey, name, ext.Critical, data)
 				if err != nil {
 					tx.Rollback()
 					return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -557,14 +487,8 @@ func (db PKIDBBackendSQLite3) StoreX509Extension(cfg *PKIConfiguration, cert *Im
 		idList = append(idList, key)
 	}
 
-	upd, err := tx.Prepare("UPDATE certificate SET extension=? WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer upd.Close()
-
-	_, err = upd.Exec(strings.Join(idList, ","), sn)
+	// _, err = tx.Exec("UPDATE certificate SET extension=$1 WHERE serial_number=$2;", idList, sn)
+	_, err = tx.Exec("UPDATE certificate SET extension=$1 WHERE serial_number=$2;", pq.Array(idList), sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -575,7 +499,7 @@ func (db PKIDBBackendSQLite3) StoreX509Extension(cfg *PKIConfiguration, cert *Im
 }
 
 // StoreRevocation - store certificate revocation
-func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *RevokeRequest) error {
+func (db PKIDBBackendPgSQL) StoreRevocation(cfg *PKIConfiguration, rev *RevokeRequest) error {
 	var _sn string
 
 	sn := rev.SerialNumber.Text(10)
@@ -590,14 +514,7 @@ func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *Revoke
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(sn).Scan(&_sn)
+	err = tx.QueryRow("SELECT serial_number FROM certificate WHERE serial_number=$1;", sn).Scan(&_sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			if rev.Force {
@@ -633,14 +550,8 @@ func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *Revoke
 	if err != nil {
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
-	ins, err := tx.Prepare("UPDATE certificate SET revocation_reason=?, revocation_date=?, state=? WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer ins.Close()
 
-	_, err = ins.Exec(reason, rev.Time, PKICertificateStatusRevoked, sn)
+	_, err = tx.Exec("UPDATE certificate SET revocation_reason=$1, revocation_date=$2, state=$3 WHERE serial_number=$4;", reason, rev.Time, PKICertificateStatusRevoked, sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -651,7 +562,7 @@ func (db PKIDBBackendSQLite3) StoreRevocation(cfg *PKIConfiguration, rev *Revoke
 }
 
 // DeleteCertificate - delete certificate from database
-func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *big.Int) error {
+func (db PKIDBBackendPgSQL) DeleteCertificate(cfg *PKIConfiguration, serial *big.Int) error {
 	var _sn string
 	var _csr *string
 
@@ -662,14 +573,7 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	query, err := tx.Prepare("SELECT serial_number, signing_request FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(sn).Scan(&_sn, &_csr)
+	err = tx.QueryRow("SELECT serial_number, signing_request FROM certificate WHERE serial_number=$1;", sn).Scan(&_sn, &_csr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -679,28 +583,14 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	del, err := tx.Prepare("DELETE FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer del.Close()
-
-	_, err = del.Exec(sn)
+	_, err = tx.Exec("DELETE FROM certificate WHERE serial_number=$1;", sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	if _csr != nil {
-		delSN, err := tx.Prepare("DELETE FROM signing_request WHERE hash=?;")
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-		defer delSN.Close()
-
-		_, err = delSN.Exec(*_csr)
+		_, err = tx.Exec("DELETE FROM signing_request WHERE hash=$1;", *_csr)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -712,7 +602,7 @@ func (db PKIDBBackendSQLite3) DeleteCertificate(cfg *PKIConfiguration, serial *b
 }
 
 // GetCertificateInformation - get certificate information
-func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, serial *big.Int) (*CertificateInformation, error) {
+func (db PKIDBBackendPgSQL) GetCertificateInformation(cfg *PKIConfiguration, serial *big.Int) (*CertificateInformation, error) {
 	var version int
 	var sd *string
 	var startDate time.Time
@@ -721,8 +611,8 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	var subject string
 	var issuer *string
 	var autoRenew bool
-	var autoRenewStart *int64
-	var autoRenewPeriod *int64
+	var autoRenewStart *float64
+	var autoRenewPeriod *float64
 	var fpMD5 *string
 	var fpSHA1 *string
 	var cert *string
@@ -732,7 +622,7 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	var revReason *int
 	var keySize *int
 	var sigAlgo *int
-	var ext *string
+	var ext []string
 	var algo string
 	var state int
 
@@ -743,14 +633,7 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	queryCert, err := tx.Prepare("SELECT version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer queryCert.Close()
-
-	err = queryCert.QueryRow(sn).Scan(&version, &sd, &ed, &subject, &autoRenew, &autoRenewStart, &autoRenewPeriod, &issuer, &keySize, &fpMD5, &fpSHA1, &cert, &sigAlgo, &ext, &csr, &state, &rd, &revReason)
+	err = tx.QueryRow("SELECT version, start_date, end_date, subject, auto_renewable, EXTRACT(EPOCH FROM auto_renew_start_period), EXTRACT(EPOCH FROM auto_renew_validity_period), issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate WHERE serial_number=$1;", sn).Scan(&version, &sd, &ed, &subject, &autoRenew, &autoRenewStart, &autoRenewPeriod, &issuer, &keySize, &fpMD5, &fpSHA1, &cert, &sigAlgo, pq.Array(&ext), &csr, &state, &rd, &revReason)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -787,7 +670,7 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	}
 
 	if sd != nil {
-		startDate, err = time.Parse(SQLite3TimeFormat, *sd)
+		startDate, err = time.Parse(PgSQLTimeFormat, *sd)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
@@ -795,7 +678,7 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	}
 
 	if ed != nil {
-		endDate, err = time.Parse(SQLite3TimeFormat, *ed)
+		endDate, err = time.Parse(PgSQLTimeFormat, *ed)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
@@ -829,12 +712,12 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	if autoRenew {
 		ar := &AutoRenew{}
 		if autoRenewStart != nil {
-			ar.AutoRenewStartPeriod = *autoRenewStart
+			ar.AutoRenewStartPeriod = int64(*autoRenewStart)
 		} else {
 			ar.AutoRenewStartPeriod = cfg.Global.AutoRenewStartPeriod * 86400
 		}
 		if autoRenewPeriod != nil {
-			ar.ValidityPeriod = *autoRenewPeriod
+			ar.ValidityPeriod = int64(*autoRenewPeriod)
 		} else {
 			ar.ValidityPeriod = cfg.Global.ValidityPeriod * 86400
 		}
@@ -842,20 +725,18 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 	}
 
 	if ext != nil {
-		if *ext != "" {
-			result.Extensions = make([]X509ExtensionData, 0)
-			for _, e := range strings.Split(*ext, ",") {
-				_ext, err := db.GetX509Extension(cfg, e)
-				if err != nil {
-					return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-				}
-				result.Extensions = append(result.Extensions, _ext)
+		result.Extensions = make([]X509ExtensionData, 0)
+		for _, e := range ext {
+			_ext, err := db.GetX509Extension(cfg, e)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
+			result.Extensions = append(result.Extensions, _ext)
 		}
 	}
 
 	if rd != nil {
-		revDate, err = time.Parse(SQLite3TimeFormat, *rd)
+		revDate, err = time.Parse(PgSQLTimeFormat, *rd)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
@@ -879,7 +760,7 @@ func (db PKIDBBackendSQLite3) GetCertificateInformation(cfg *PKIConfiguration, s
 }
 
 // GetX509Extension - get X509 extension from database
-func (db PKIDBBackendSQLite3) GetX509Extension(cfg *PKIConfiguration, id string) (X509ExtensionData, error) {
+func (db PKIDBBackendPgSQL) GetX509Extension(cfg *PKIConfiguration, id string) (X509ExtensionData, error) {
 	var ext X509ExtensionData
 	var name string
 	var crit bool
@@ -890,13 +771,7 @@ func (db PKIDBBackendSQLite3) GetX509Extension(cfg *PKIConfiguration, id string)
 		return ext, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	query, err := tx.Prepare("SELECT name, critical, data FROM extension WHERE hash=?;")
-	if err != nil {
-		return ext, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(id).Scan(&name, &crit, &data)
+	err = tx.QueryRow("SELECT name, critical, data FROM extension WHERE hash=$1;", id).Scan(&name, &crit, &data)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -918,7 +793,7 @@ func (db PKIDBBackendSQLite3) GetX509Extension(cfg *PKIConfiguration, id string)
 }
 
 // GetCertificateSigningRequest - get CSR from hash
-func (db PKIDBBackendSQLite3) GetCertificateSigningRequest(cfg *PKIConfiguration, hash string) (string, error) {
+func (db PKIDBBackendPgSQL) GetCertificateSigningRequest(cfg *PKIConfiguration, hash string) (string, error) {
 	var csr string
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -926,14 +801,7 @@ func (db PKIDBBackendSQLite3) GetCertificateSigningRequest(cfg *PKIConfiguration
 		return csr, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	query, err := tx.Prepare("SELECT request FROM signing_request WHERE hash=?;")
-	if err != nil {
-		tx.Rollback()
-		return csr, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(hash).Scan(&csr)
+	err = tx.QueryRow("SELECT request FROM signing_request WHERE hash=$1;", hash).Scan(&csr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -948,7 +816,7 @@ func (db PKIDBBackendSQLite3) GetCertificateSigningRequest(cfg *PKIConfiguration
 }
 
 // GetSignatureAlgorithmName - get name of signature algorithm for id
-func (db PKIDBBackendSQLite3) GetSignatureAlgorithmName(cfg *PKIConfiguration, id int) (string, error) {
+func (db PKIDBBackendPgSQL) GetSignatureAlgorithmName(cfg *PKIConfiguration, id int) (string, error) {
 	var algoName string
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -956,14 +824,7 @@ func (db PKIDBBackendSQLite3) GetSignatureAlgorithmName(cfg *PKIConfiguration, i
 		return "", fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	query, err := tx.Prepare("SELECT algorithm FROM signature_algorithm WHERE id=?;")
-	if err != nil {
-		tx.Rollback()
-		return "", fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(id).Scan(&algoName)
+	err = tx.QueryRow("SELECT algorithm FROM signature_algorithm WHERE id=$1;", id).Scan(&algoName)
 	if err != nil {
 		tx.Rollback()
 		return "", fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -974,7 +835,7 @@ func (db PKIDBBackendSQLite3) GetSignatureAlgorithmName(cfg *PKIConfiguration, i
 }
 
 // SearchSubject - search subject
-func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string) (*big.Int, error) {
+func (db PKIDBBackendPgSQL) SearchSubject(cfg *PKIConfiguration, search string) (*big.Int, error) {
 	var sn string
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -982,16 +843,7 @@ func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	// Note: The LIKE operator is case sensitive by default for unicode characters that are beyond the ASCII range.
-	//       (see https://sqlite.org/lang_expr.html#like).
-	query, err := tx.Prepare("SELECT serial_number FROM certificate WHERE LOWER(subject) LIKE ?;")
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer query.Close()
-
-	err = query.QueryRow(strings.ToLower(search)).Scan(&sn)
+	err = tx.QueryRow("SELECT serial_number FROM certificate WHERE subject ILIKE $1;", strings.ToLower(search)).Scan(&sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Commit()
@@ -1012,9 +864,9 @@ func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string
 }
 
 // RestoreFromJSON - Restore from JSON
-func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOutput) error {
-	var ext string
-	var extptr *string
+func (db PKIDBBackendPgSQL) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOutput) error {
+	// var ext string
+	var extptr []string
 	var sdate time.Time
 	var ptrsdate *time.Time
 	var edate time.Time
@@ -1027,20 +879,16 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	ins, err := tx.Prepare("INSERT INTO certificate (serial_number, version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer ins.Close()
-
 	// Insert certificates
 	for _, cert := range j.Certificates {
 		if len(cert.Extension) == 0 {
 			extptr = nil
 		} else {
-			ext = strings.Join(cert.Extension, ",")
-			extptr = &ext
+			extptr = cert.Extension
+			/*
+				ext = strings.Join(cert.Extension, ",")
+				extptr = &ext
+			*/
 		}
 
 		// if defined convert UTC timestamp to correct time.Time
@@ -1065,7 +913,7 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 			ptrrdate = nil
 		}
 
-		_, err := ins.Exec(cert.SerialNumber, cert.Version, ptrsdate, ptredate, cert.Subject, cert.AutoRenewable, cert.AutoRenewStartPeriod, cert.AutoRenewValidityPeriod, cert.Issuer, cert.KeySize, cert.FingerPrintMD5, cert.FingerPrintSHA1, cert.Certificate, cert.SignatureAlgorithmID, extptr, cert.SigningRequest, cert.State, ptrrdate, cert.RevocationReason)
+		_, err := tx.Exec("INSERT INTO certificate (serial_number, version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);", cert.SerialNumber, cert.Version, ptrsdate, ptredate, cert.Subject, cert.AutoRenewable, cert.AutoRenewStartPeriod, cert.AutoRenewValidityPeriod, cert.Issuer, cert.KeySize, cert.FingerPrintMD5, cert.FingerPrintSHA1, cert.Certificate, cert.SignatureAlgorithmID, pq.Array(&extptr), cert.SigningRequest, cert.State, ptrrdate, cert.RevocationReason)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1073,15 +921,8 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 	}
 
 	// Insert CSR
-	insCSR, err := tx.Prepare("INSERT INTO signing_request (hash, request) VALUES (?, ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer insCSR.Close()
-
 	for _, csr := range j.SigningRequests {
-		_, err := insCSR.Exec(csr.Hash, csr.Request)
+		_, err := tx.Exec("INSERT INTO signing_request (hash, request) VALUES ($1, $2);", csr.Hash, csr.Request)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1089,15 +930,8 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 	}
 
 	// Insert extensions
-	insExt, err := tx.Prepare("INSERT INTO extension (hash, name, critical, data) VALUES (?, ?, ?, ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer insExt.Close()
-
 	for _, ext := range j.Extensions {
-		_, err = insExt.Exec(ext.Hash, ext.Name, ext.Critical, ext.Data)
+		_, err = tx.Exec("INSERT INTO extension (hash, name, critical, data) VALUES ($1, $2, $3, $4);", ext.Hash, ext.Name, ext.Critical, ext.Data)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1105,15 +939,8 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 	}
 
 	// Insert signature algorithms
-	insSig, err := tx.Prepare("INSERT INTO signature_algorithm (id, algorithm) VALUES (?, ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer insSig.Close()
-
 	for _, sig := range j.SignatureAlgorithms {
-		_, err = insSig.Exec(sig.ID, sig.Algorithm)
+		_, err = tx.Exec("INSERT INTO signature_algorithm (id, algorithm) VALUES ($1, $2);", sig.ID, sig.Algorithm)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1125,12 +952,14 @@ func (db PKIDBBackendSQLite3) RestoreFromJSON(cfg *PKIConfiguration, j *JSONInOu
 }
 
 // BackupToJSON - backup database content to JSON
-func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, error) {
+func (db PKIDBBackendPgSQL) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput, error) {
 	var dump JSONInOutput
 	var extptr *string
 	var sdateptr *string
 	var edateptr *string
 	var rdateptr *string
+	var autorenewstartperiod *float64
+	var autorenewvalidityperiod *float64
 
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
@@ -1138,7 +967,7 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 	}
 
 	// Certificates
-	crows, err := tx.Query("SELECT serial_number, version, start_date, end_date, subject, auto_renewable, auto_renew_start_period, auto_renew_validity_period, issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate;")
+	crows, err := tx.Query("SELECT serial_number, version, start_date, end_date, subject, auto_renewable, EXTRACT(EPOCH FROM auto_renew_start_period), EXTRACT(EPOCH FROM auto_renew_validity_period), issuer, keysize, fingerprint_md5, fingerprint_sha1, certificate, signature_algorithm_id, extension, signing_request, state, revocation_date, revocation_reason FROM certificate;")
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1147,7 +976,7 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 
 	for crows.Next() {
 		jcert := JSONCertificate{}
-		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &sdateptr, &edateptr, &jcert.Subject, &jcert.AutoRenewable, &jcert.AutoRenewStartPeriod, &jcert.AutoRenewValidityPeriod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &rdateptr, &jcert.RevocationReason)
+		err = crows.Scan(&jcert.SerialNumber, &jcert.Version, &sdateptr, &edateptr, &jcert.Subject, &jcert.AutoRenewable, &autorenewstartperiod, &autorenewvalidityperiod, &jcert.Issuer, &jcert.KeySize, &jcert.FingerPrintMD5, &jcert.FingerPrintSHA1, &jcert.Certificate, &jcert.SignatureAlgorithmID, &extptr, &jcert.SigningRequest, &jcert.State, &rdateptr, &jcert.RevocationReason)
 		if err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1155,7 +984,7 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 
 		// convert Start/End/Revocation date from strings to timestamps
 		if sdateptr != nil {
-			sdate, err := time.Parse(SQLite3TimeFormat, *sdateptr)
+			sdate, err := time.Parse(PgSQLTimeFormat, *sdateptr)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
@@ -1166,7 +995,7 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 		}
 
 		if edateptr != nil {
-			edate, err := time.Parse(SQLite3TimeFormat, *edateptr)
+			edate, err := time.Parse(PgSQLTimeFormat, *edateptr)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
@@ -1177,7 +1006,7 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 		}
 
 		if rdateptr != nil {
-			rdate, err := time.Parse(SQLite3TimeFormat, *rdateptr)
+			rdate, err := time.Parse(PgSQLTimeFormat, *rdateptr)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
@@ -1193,6 +1022,15 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 			for _, e := range strings.Split(*extptr, ",") {
 				jcert.Extension = append(jcert.Extension, e)
 			}
+		}
+
+		if autorenewstartperiod != nil {
+			t := int64(*autorenewstartperiod)
+			jcert.AutoRenewStartPeriod = &t
+		}
+		if autorenewvalidityperiod != nil {
+			t := int64(*autorenewvalidityperiod)
+			jcert.AutoRenewValidityPeriod = &t
 		}
 
 		dump.Certificates = append(dump.Certificates, jcert)
@@ -1279,7 +1117,7 @@ func (db PKIDBBackendSQLite3) BackupToJSON(cfg *PKIConfiguration) (*JSONInOutput
 }
 
 // GetSerialNumbersByState - list serial numbers by state
-func (db PKIDBBackendSQLite3) GetSerialNumbersByState(cfg *PKIConfiguration, state int) ([]*big.Int, error) {
+func (db PKIDBBackendPgSQL) GetSerialNumbersByState(cfg *PKIConfiguration, state int) ([]*big.Int, error) {
 	var results = make([]*big.Int, 0)
 	var resmap = make(map[string]bool)
 	var sn string
@@ -1316,15 +1154,7 @@ func (db PKIDBBackendSQLite3) GetSerialNumbersByState(cfg *PKIConfiguration, sta
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	} else {
-
-		search, err := tx.Prepare("SELECT serial_number FROM certificate WHERE state=?;")
-		if err != nil {
-			tx.Rollback()
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-		defer search.Close()
-
-		srows, err := search.Query(state)
+		srows, err := tx.Query("SELECT serial_number FROM certificate WHERE state=$1;", state)
 		if err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1349,14 +1179,7 @@ func (db PKIDBBackendSQLite3) GetSerialNumbersByState(cfg *PKIConfiguration, sta
 
 		// If housekeeping wasn't run (yet or at all), we can find invalid/expired certificates based on the start/end dates
 		if state == PKICertificateStatusExpired {
-			esearch, err := tx.Prepare("SELECT serial_number FROM certificate WHERE start_date < ? AND end_date < ?;")
-			if err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			defer esearch.Close()
-
-			erows, err := esearch.Query(time.Now(), time.Now())
+			erows, err := tx.Query("SELECT serial_number FROM certificate WHERE start_date < $1 AND end_date < $1;", time.Now())
 			if err != nil {
 				tx.Rollback()
 				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1379,14 +1202,7 @@ func (db PKIDBBackendSQLite3) GetSerialNumbersByState(cfg *PKIConfiguration, sta
 		}
 
 		if state == PKICertificateStatusInvalid {
-			isearch, err := tx.Prepare("SELECT serial_number FROM certificate WHERE start_date > end_date OR start_date > ?;")
-			if err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			defer isearch.Close()
-
-			irows, err := isearch.Query(time.Now())
+			irows, err := tx.Query("SELECT serial_number FROM certificate WHERE start_date > end_date OR start_date > $1;", time.Now())
 			if err != nil {
 				tx.Rollback()
 				return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1424,7 +1240,7 @@ func (db PKIDBBackendSQLite3) GetSerialNumbersByState(cfg *PKIConfiguration, sta
 }
 
 // LockSerialNumber - lock serial number in databse
-func (db PKIDBBackendSQLite3) LockSerialNumber(cfg *PKIConfiguration, serial *big.Int, state int, force bool) error {
+func (db PKIDBBackendPgSQL) LockSerialNumber(cfg *PKIConfiguration, serial *big.Int, state int, force bool) error {
 	var _sn string
 
 	sn := serial.Text(10)
@@ -1439,28 +1255,12 @@ func (db PKIDBBackendSQLite3) LockSerialNumber(cfg *PKIConfiguration, serial *bi
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	// XXX: A much more elegant way would be INSERT INTO ... ON CONFLICT DO ... but this requires SQLite3 >= 3.24.0 (see https://www.sqlite.org/lang_UPSERT.html).
-	//      Sadly current enterprise distributions like Redhat Enterprise Linux 7 doesn't ship with this version (at least RHEL 8 would).
-	//      So instead of bundling (and maintaining) our own SQLitee3 package we fallback to the old behavior.
-	search, err := tx.Prepare("SELECT serial_number FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer search.Close()
-
-	err = search.QueryRow(sn).Scan(&_sn)
+	// XXX: A much more elegant way would be INSERT INTO ... ON CONFLICT DO ...
+	err = tx.QueryRow("SELECT serial_number FROM certificate WHERE serial_number=$1;", sn).Scan(&_sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ins, err := tx.Prepare("INSERT INTO certificate (serial_number, subject, certificate, version, state) VALUES (?, ?, ?, ?, ?);")
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			defer ins.Close()
-
 			lockMsg := fmt.Sprintf("Locked serial number %s", sn)
-			_, err = ins.Exec(sn, lockMsg, lockMsg, 0, state)
+			_, err = tx.Exec("INSERT INTO certificate (serial_number, subject, certificate, version, state) VALUES ($1, $2, $2, $3, $4);", sn, lockMsg, 0, state)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1474,14 +1274,7 @@ func (db PKIDBBackendSQLite3) LockSerialNumber(cfg *PKIConfiguration, serial *bi
 	}
 
 	if force {
-		upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE serial_number=?")
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-		defer upd.Close()
-
-		_, err = upd.Exec(state, sn)
+		_, err = tx.Exec("UPDATE certificate SET state=$1 WHERE serial_number=$2;", state, sn)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1495,7 +1288,7 @@ func (db PKIDBBackendSQLite3) LockSerialNumber(cfg *PKIConfiguration, serial *bi
 }
 
 // GetRevokedCertificates - get revoked certificates
-func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]RevokeRequest, error) {
+func (db PKIDBBackendPgSQL) GetRevokedCertificates(cfg *PKIConfiguration) ([]RevokeRequest, error) {
 	var result = make([]RevokeRequest, 0)
 	var sn string
 	var rdatestr *string
@@ -1507,14 +1300,7 @@ func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]R
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	search, err := tx.Prepare("SELECT serial_number, revocation_date, revocation_reason FROM certificate WHERE state=?;")
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer search.Close()
-
-	srows, err := search.Query(PKICertificateStatusRevoked)
+	srows, err := tx.Query("SELECT serial_number, revocation_date, revocation_reason FROM certificate WHERE state=$1;", PKICertificateStatusRevoked)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1539,7 +1325,7 @@ func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]R
 			return nil, fmt.Errorf("%s: Missing revocation date in revoked certificate %s", GetFrame(), serial)
 		}
 
-		rdate, err = time.Parse(SQLite3TimeFormat, *rdatestr)
+		rdate, err = time.Parse(PgSQLTimeFormat, *rdatestr)
 		if err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1571,7 +1357,7 @@ func (db PKIDBBackendSQLite3) GetRevokedCertificates(cfg *PKIConfiguration) ([]R
 }
 
 // GetCertificate - get certificate as ASN1 DER data
-func (db PKIDBBackendSQLite3) GetCertificate(cfg *PKIConfiguration, serial *big.Int) ([]byte, error) {
+func (db PKIDBBackendPgSQL) GetCertificate(cfg *PKIConfiguration, serial *big.Int) ([]byte, error) {
 	var cert string
 
 	sn := serial.Text(10)
@@ -1581,14 +1367,7 @@ func (db PKIDBBackendSQLite3) GetCertificate(cfg *PKIConfiguration, serial *big.
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	search, err := tx.Prepare("SELECT certificate FROM certificate WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer search.Close()
-
-	err = search.QueryRow(sn).Scan(&cert)
+	err = tx.QueryRow("SELECT certificate FROM certificate WHERE serial_number=$1;", sn).Scan(&cert)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Commit()
@@ -1621,7 +1400,7 @@ func (db PKIDBBackendSQLite3) GetCertificate(cfg *PKIConfiguration, serial *big.
 }
 
 // StoreState - set state
-func (db PKIDBBackendSQLite3) StoreState(cfg *PKIConfiguration, serial *big.Int, state string) error {
+func (db PKIDBBackendPgSQL) StoreState(cfg *PKIConfiguration, serial *big.Int, state string) error {
 	sn := serial.Text(10)
 	tx, err := cfg.Database.dbhandle.Begin()
 	if err != nil {
@@ -1634,14 +1413,7 @@ func (db PKIDBBackendSQLite3) StoreState(cfg *PKIConfiguration, serial *big.Int,
 		return fmt.Errorf("%s: Invalid state %s", GetFrame(), state)
 	}
 
-	upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer upd.Close()
-
-	_, err = upd.Exec(st, sn)
+	_, err = tx.Exec("UPDATE certificate SET state=$1 WHERE serial_number=$2;", st, sn)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1652,7 +1424,7 @@ func (db PKIDBBackendSQLite3) StoreState(cfg *PKIConfiguration, serial *big.Int,
 }
 
 // GetStatistics - get statistics
-func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]map[string]int64, error) {
+func (db PKIDBBackendPgSQL) GetStatistics(cfg *PKIConfiguration) (map[string]map[string]int64, error) {
 	var sizeStat = make(map[string]int64)
 	var keySizeStat = make(map[string]int64)
 	var sigAlgoStat = make(map[string]int64)
@@ -1696,14 +1468,7 @@ func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]m
 	}
 
 	// key size
-	ksearch, err := tx.Prepare("SELECT keysize, COUNT(keysize) FROM certificate WHERE state=? GROUP BY keysize;")
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer ksearch.Close()
-
-	krows, err := ksearch.Query(PKICertificateStatusValid)
+	krows, err := tx.Query("SELECT keysize, COUNT(keysize) FROM certificate WHERE state=$1 GROUP BY keysize;", PKICertificateStatusValid)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1725,14 +1490,7 @@ func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]m
 	}
 
 	// algorithms
-	asearch, err := tx.Prepare("SELECT algorithm, COUNT(algorithm) FROM signature_algorithm INNER JOIN certificate ON certificate.signature_algorithm_id=signature_algorithm.id WHERE certificate.state=? GROUP BY algorithm;")
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer asearch.Close()
-
-	arows, err := asearch.Query(PKICertificateStatusValid)
+	arows, err := tx.Query("SELECT algorithm, COUNT(algorithm) FROM signature_algorithm INNER JOIN certificate ON certificate.signature_algorithm_id=signature_algorithm.id WHERE certificate.state=$1 GROUP BY algorithm;", PKICertificateStatusValid)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1754,14 +1512,7 @@ func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]m
 	}
 
 	// revoked
-	rsearch, err := tx.Prepare("SELECT revocation_reason, COUNT(revocation_reason) FROM certificate WHERE state=? GROUP BY revocation_reason;")
-	if err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer rsearch.Close()
-
-	rrows, err := rsearch.Query(PKICertificateStatusRevoked)
+	rrows, err := tx.Query("SELECT revocation_reason, COUNT(revocation_reason) FROM certificate WHERE state=$1 GROUP BY revocation_reason;", PKICertificateStatusRevoked)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1798,7 +1549,7 @@ func (db PKIDBBackendSQLite3) GetStatistics(cfg *PKIConfiguration) (map[string]m
 }
 
 // DeleteAutoRenew - delete auto renew data
-func (db PKIDBBackendSQLite3) DeleteAutoRenew(cfg *PKIConfiguration, serial *big.Int) error {
+func (db PKIDBBackendPgSQL) DeleteAutoRenew(cfg *PKIConfiguration, serial *big.Int) error {
 	sn := serial.Text(10)
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -1806,14 +1557,7 @@ func (db PKIDBBackendSQLite3) DeleteAutoRenew(cfg *PKIConfiguration, serial *big
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	upd, err := tx.Prepare("UPDATE certificate SET auto_renewable=False, auto_renew_start_period=NULL, auto_renew_validity_period=NULL WHERE serial_number=?;")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer upd.Close()
-
-	_, err = upd.Exec(sn)
+	_, err = tx.Exec("UPDATE certificate SET auto_renewable=False, auto_renew_start_period=NULL, auto_renew_validity_period=NULL WHERE serial_number=$1;", sn)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -1828,11 +1572,11 @@ func (db PKIDBBackendSQLite3) DeleteAutoRenew(cfg *PKIConfiguration, serial *big
 }
 
 // Housekeeping - housekeeping
-func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool, period int) error {
+func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, period int) error {
 	var sn string
 	var dstr string
-	var startPeriod int64
-	var validPeriod int64
+	var startPeriod float64
+	var validPeriod float64
 	var serial *big.Int
 	var newEnd time.Time
 	var oldCSR *x509.CertificateRequest
@@ -1843,13 +1587,7 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 	}
 
 	if autoRenew {
-		asearch, err := tx.Prepare("SELECT serial_number, end_date, auto_renew_start_period, auto_renew_validity_period FROM certificate WHERE auto_renewable=True AND (state=? OR state=?);")
-		if err != nil {
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-		defer asearch.Close()
-
-		arows, err := asearch.Query(PKICertificateStatusValid, PKICertificateStatusExpired)
+		arows, err := tx.Query("SELECT serial_number, end_date, EXTRACT(EPOCH FROM auto_renew_start_period), EXTRACT(EPOCH FROM auto_renew_validity_period) FROM certificate WHERE auto_renewable=True AND (state=$1 OR state=$2);", PKICertificateStatusValid, PKICertificateStatusExpired)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -1861,14 +1599,14 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
-			edate, err := time.Parse(SQLite3TimeFormat, dstr)
+			edate, err := time.Parse(PgSQLTimeFormat, dstr)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
 			delta := time.Now().Sub(edate).Seconds()
-			if int64(delta) >= startPeriod {
+			if delta >= startPeriod {
 				serial = big.NewInt(0)
 				serial, ok := serial.SetString(sn, 10)
 				if !ok {
@@ -1939,47 +1677,29 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 				}
 			}
 		}
-
 		err = arows.Err()
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 	}
+
 	// Set all invalid certificates to valid if notBefore < now and notAfter > now
-	upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (start_date < ?) AND (end_date > ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer upd.Close()
-	_, err = upd.Exec(PKICertificateStatusValid, PKICertificateStatusInvalid, time.Now(), time.Now())
+	_, err = tx.Exec("UPDATE certificate SET state=$1 WHERE state=$2 AND (start_date < $3) AND (end_date > $3);", PKICertificateStatusValid, PKICertificateStatusInvalid, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	// Set all valid certificates to invalid if notBefore >= now
-	upd2, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (start_date > ?);")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer upd2.Close()
-	_, err = upd2.Exec(PKICertificateStatusInvalid, PKICertificateStatusValid, time.Now())
+	_, err = tx.Exec("UPDATE certificate SET state=$1 WHERE state=$2 AND (start_date > $3);", PKICertificateStatusInvalid, PKICertificateStatusValid, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
 	// Set all valid certificates to expired if notAfter <= now
-	upd3, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (end_date <= ?)")
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
-	defer upd3.Close()
-	_, err = upd3.Exec(PKICertificateStatusExpired, PKICertificateStatusValid, time.Now())
+	_, err = tx.Exec("UPDATE certificate SET state=$1 WHERE state=$2 AND (end_date <= $3)", PKICertificateStatusExpired, PKICertificateStatusValid, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())

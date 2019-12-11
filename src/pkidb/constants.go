@@ -152,6 +152,9 @@ const SQLite3TimeFormat = "2006-01-02 15:04:05-07:00"
 // PgSQLTimeFormat - date/time format for PgSQL storage
 const PgSQLTimeFormat = "2006-01-02T15:04:05-07:00"
 
+// MySQLTimeFormat - date/time format for MySQL storage
+const MySQLTimeFormat = "2006-01-02 15:04:05"
+
 // DigestMap - Map OpenSSL digest to Golang x509.SignatureAlgorithm
 var DigestMap = map[string]x509.SignatureAlgorithm{
 	"md5":    x509.MD5WithRSA,
