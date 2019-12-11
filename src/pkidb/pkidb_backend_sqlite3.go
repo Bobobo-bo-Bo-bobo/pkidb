@@ -1858,89 +1858,89 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
-		}
-		err = arows.Err()
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-		edate, err := time.Parse(SQLite3TimeFormat, dstr)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
-
-		delta := time.Now().Sub(edate).Seconds()
-		if int64(delta) >= startPeriod {
-			serial = big.NewInt(0)
-			serial, ok := serial.SetString(sn, 10)
-			if !ok {
-				tx.Rollback()
-				return fmt.Errorf("%s: Can't convert serial number %s to big integer", GetFrame(), sn)
-			}
-
-			certinfo, err := db.GetCertificateInformation(cfg, serial)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-
-			if period != 0 {
-				newEnd = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(period))
-			} else {
-				newEnd = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(cfg.Global.ValidityPeriod))
-			}
-
-			raw, err := RenewCertificate(cfg, serial, newEnd)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-
-			ncert, err := x509.ParseCertificate(raw)
+			edate, err := time.Parse(SQLite3TimeFormat, dstr)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
-			if certinfo.CSR != "" {
-				rawCSR, err := base64.StdEncoding.DecodeString(certinfo.CSR)
-				if err != nil {
+			delta := time.Now().Sub(edate).Seconds()
+			if int64(delta) >= startPeriod {
+				serial = big.NewInt(0)
+				serial, ok := serial.SetString(sn, 10)
+				if !ok {
 					tx.Rollback()
-					return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					return fmt.Errorf("%s: Can't convert serial number %s to big integer", GetFrame(), sn)
 				}
-				oldCSR, err = x509.ParseCertificateRequest(rawCSR)
-				if err != nil {
-					tx.Rollback()
-					return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-				}
-			} else {
-				oldCSR = nil
-			}
 
-			// create import struct
-			imp := &ImportCertificate{
-				Certificate: ncert,
-				AutoRenew:   certinfo.AutoRenewable,
-				Revoked:     certinfo.Revoked,
-				CSR:         oldCSR,
-			}
-			err = db.StoreCertificate(cfg, imp, true)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-
-			if certinfo.State == "expired" {
-				err = db.StoreState(cfg, serial, "valid")
+				certinfo, err := db.GetCertificateInformation(cfg, serial)
 				if err != nil {
 					tx.Rollback()
 					return err
 				}
+
+				if period != 0 {
+					newEnd = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(period))
+				} else {
+					newEnd = time.Now().Add(time.Duration(24) * time.Hour * time.Duration(cfg.Global.ValidityPeriod))
+				}
+
+				raw, err := RenewCertificate(cfg, serial, newEnd)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+
+				ncert, err := x509.ParseCertificate(raw)
+				if err != nil {
+					tx.Rollback()
+					return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+				}
+
+				if certinfo.CSR != "" {
+					rawCSR, err := base64.StdEncoding.DecodeString(certinfo.CSR)
+					if err != nil {
+						tx.Rollback()
+						return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					}
+					oldCSR, err = x509.ParseCertificateRequest(rawCSR)
+					if err != nil {
+						tx.Rollback()
+						return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+					}
+				} else {
+					oldCSR = nil
+				}
+
+				// create import struct
+				imp := &ImportCertificate{
+					Certificate: ncert,
+					AutoRenew:   certinfo.AutoRenewable,
+					Revoked:     certinfo.Revoked,
+					CSR:         oldCSR,
+				}
+				err = db.StoreCertificate(cfg, imp, true)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+
+				if certinfo.State == "expired" {
+					err = db.StoreState(cfg, serial, "valid")
+					if err != nil {
+						tx.Rollback()
+						return err
+					}
+				}
 			}
 		}
-	}
 
+		err = arows.Err()
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+	}
 	// Set all invalid certificates to valid if notBefore < now and notAfter > now
 	upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (start_date < ?) AND (end_date > ?);")
 	if err != nil {
