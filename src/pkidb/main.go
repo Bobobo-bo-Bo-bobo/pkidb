@@ -79,6 +79,21 @@ func main() {
 			os.Exit(1)
 		}
 		config = MergeSiteConfiguration(config, scfg)
+	} else {
+		// if sites are configured in the configuration file a default_site MUST be provided
+		if config.Global.Sites != "" {
+			if config.Global.DefaultSite != "" {
+				fmt.Fprintf(os.Stderr, "%s: sites are defined in %s but not default_site", GetFrame(), *configFile)
+				os.Exit(1)
+			}
+
+			dcfg, found := sites[config.Global.DefaultSite]
+			if !found {
+				fmt.Fprintf(os.Stderr, "%s: no configuration found for default_site %s", GetFrame(), config.Global.DefaultSite)
+				os.Exit(1)
+			}
+			config = MergeSiteConfiguration(config, dcfg)
+		}
 	}
 
 	command = trailingArguments[0]
