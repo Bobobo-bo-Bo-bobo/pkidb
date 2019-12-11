@@ -93,8 +93,10 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 		ic.AutoRenew.ValidityPeriod = *period
 	}
 
-	ic.AutoRenew.AutoRenewStartPeriod *= 86400
-	ic.AutoRenew.ValidityPeriod *= 86400
+	if ic.AutoRenew != nil {
+		ic.AutoRenew.AutoRenewStartPeriod *= 86400
+		ic.AutoRenew.ValidityPeriod *= 86400
+	}
 
 	if *revoked != "" {
 		_revoked := strings.Split(*revoked, ",")

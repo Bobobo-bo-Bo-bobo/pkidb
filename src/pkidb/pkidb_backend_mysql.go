@@ -1907,7 +1907,7 @@ func (db PKIDBBackendMySQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, 
 		}
 		tx.Commit()
 
-		for i, _ := range snList {
+		for i := range snList {
 			sn = snList[i]
 			dstr = dstrList[i]
 			startPeriod = spList[i]

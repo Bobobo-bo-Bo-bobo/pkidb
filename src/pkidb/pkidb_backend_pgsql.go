@@ -1577,10 +1577,10 @@ func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, 
 	var dstr string
 	var startPeriod float64
 	var validPeriod float64
-    var snList []string
-    var dstrList []string
-    var spList []float64
-    var vpList []float64
+	var snList []string
+	var dstrList []string
+	var spList []float64
+	var vpList []float64
 	var serial *big.Int
 	var newEnd time.Time
 	var oldCSR *x509.CertificateRequest
@@ -1603,23 +1603,23 @@ func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, 
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
-            snList = append(snList, sn)
-            dstrList = append(dstrList, dstr)
-            spList = append(spList, startPeriod)
-            vpList = append(vpList, validPeriod)
-        }
-        err = arows.Err()
-        if err != nil {
-            tx.Rollback()
-            return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-        }
-        tx.Commit()
+			snList = append(snList, sn)
+			dstrList = append(dstrList, dstr)
+			spList = append(spList, startPeriod)
+			vpList = append(vpList, validPeriod)
+		}
+		err = arows.Err()
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		tx.Commit()
 
-        for i, _ := range snList {
-            sn = snList[i]
-            dstr = dstrList[i]
-            startPeriod = spList[i]
-            validPeriod = vpList[i]
+		for i := range snList {
+			sn = snList[i]
+			dstr = dstrList[i]
+			startPeriod = spList[i]
+			validPeriod = vpList[i]
 
 			edate, err := time.Parse(PgSQLTimeFormat, dstr)
 			if err != nil {

@@ -1877,7 +1877,7 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
-		for i, _ := range snList {
+		for i := range snList {
 			sn = snList[i]
 			dstr = dstrList[i]
 			startPeriod = spList[i]
