@@ -110,10 +110,10 @@ func (db PKIDBBackendPgSQL) CloseDatabase(h *sql.DB) error {
 		err = h.Close()
 	}
 
-    if err != nil {
-        return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-    }
-    return nil
+	if err != nil {
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	return nil
 }
 
 // GetLastSerialNumber - get last serial number from database
