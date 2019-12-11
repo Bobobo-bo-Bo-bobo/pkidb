@@ -17,6 +17,8 @@ func main() {
 	var ok bool
 	var config *PKIConfiguration
 	var command string
+	var sites = make(map[string]*PKIConfiguration)
+	var err error
 
 	var logFmt = new(log.TextFormatter)
 	logFmt.FullTimestamp = true
@@ -36,9 +38,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *site != "" {
-	}
-
 	trailingArguments := flag.Args()
 	if len(trailingArguments) == 0 {
 		fmt.Fprintln(os.Stderr, "Not enough arguments")
@@ -53,7 +52,7 @@ func main() {
 		log.WithFields(log.Fields{"maximum_serial_number_string": MaximumSerialNumberString}).Fatal("Can't generate maximal serial number")
 	}
 
-	config, err := ParseConfiguration(*configFile)
+	config, err = ParseConfiguration(*configFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Can't parse configuration file: %s\n", err)
 		os.Exit(1)
@@ -63,6 +62,23 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
+	}
+
+	if config.Global.Sites != "" {
+		sites, err = LoadSiteConfigurations(config.Global.Sites)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
+		}
+	}
+
+	if *site != "" {
+		scfg, found := sites[*site]
+		if !found {
+			fmt.Fprintf(os.Stderr, "%s: Can't find a configuration for site %s", GetFrame(), *site)
+			os.Exit(1)
+		}
+		config = MergeSiteConfiguration(config, scfg)
 	}
 
 	command = trailingArguments[0]
