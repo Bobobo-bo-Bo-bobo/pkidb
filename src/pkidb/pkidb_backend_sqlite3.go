@@ -1833,6 +1833,10 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 	var dstr string
 	var startPeriod int64
 	var validPeriod int64
+	var snList []string
+	var dstrList []string
+	var spList []int64
+	var vpList []int64
 	var serial *big.Int
 	var newEnd time.Time
 	var oldCSR *x509.CertificateRequest
@@ -1861,9 +1865,26 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
+			snList = append(snList, sn)
+			dstrList = append(dstrList, dstr)
+			spList = append(spList, startPeriod)
+			vpList = append(vpList, validPeriod)
+		}
+
+		err = arows.Err()
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
+		for i, _ := range snList {
+			sn = snList[i]
+			dstr = dstrList[i]
+			startPeriod = spList[i]
+			validPeriod = vpList[i]
+
 			edate, err := time.Parse(SQLite3TimeFormat, dstr)
 			if err != nil {
-				tx.Rollback()
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 
@@ -1872,13 +1893,11 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 				serial = big.NewInt(0)
 				serial, ok := serial.SetString(sn, 10)
 				if !ok {
-					tx.Rollback()
 					return fmt.Errorf("%s: Can't convert serial number %s to big integer", GetFrame(), sn)
 				}
 
 				certinfo, err := db.GetCertificateInformation(cfg, serial)
 				if err != nil {
-					tx.Rollback()
 					return err
 				}
 
@@ -1890,25 +1909,21 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 
 				raw, err := RenewCertificate(cfg, serial, newEnd)
 				if err != nil {
-					tx.Rollback()
 					return err
 				}
 
 				ncert, err := x509.ParseCertificate(raw)
 				if err != nil {
-					tx.Rollback()
 					return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 				}
 
 				if certinfo.CSR != "" {
 					rawCSR, err := base64.StdEncoding.DecodeString(certinfo.CSR)
 					if err != nil {
-						tx.Rollback()
 						return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 					}
 					oldCSR, err = x509.ParseCertificateRequest(rawCSR)
 					if err != nil {
-						tx.Rollback()
 						return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 					}
 				} else {
@@ -1926,25 +1941,22 @@ func (db PKIDBBackendSQLite3) Housekeeping(cfg *PKIConfiguration, autoRenew bool
 
 				err = db.StoreCertificate(cfg, imp, true)
 				if err != nil {
-					tx.Rollback()
 					return err
 				}
 
 				if certinfo.State == "expired" {
 					err = db.StoreState(cfg, serial, "valid")
 					if err != nil {
-						tx.Rollback()
 						return err
 					}
 				}
 			}
 		}
+	}
 
-		err = arows.Err()
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-		}
+	tx, err = cfg.Database.dbhandle.Begin()
+	if err != nil {
+		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	// Set all invalid certificates to valid if notBefore < now and notAfter > now
 	upd, err := tx.Prepare("UPDATE certificate SET state=? WHERE state=? AND (start_date < ?) AND (end_date > ?);")
