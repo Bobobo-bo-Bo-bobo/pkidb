@@ -1,5 +1,7 @@
 GOPATH	= $(CURDIR)
 BINDIR	= $(CURDIR)/bin
+DOCDIR	= $(CURDIR)/doc
+ETCDIR	= $(CURDIR)/examples
 
 PROGRAMS = pkidb
 
@@ -19,14 +21,23 @@ build:
 
 destdirs:
 	mkdir -p -m 0755 $(DESTDIR)/usr/bin
+	mkdir -p -m 0755 $(DESTDIR)/usr/share/man/man1
+	mkdir -p -m 0755 $(DESTDIR)/etc/pkidb
 
 strip: build
 	strip --strip-all $(BINDIR)/pkidb
 
-install: strip destdirs install-bin
+install: strip destdirs install-bin install-man install-etc
 
 install-bin:
 	install -m 0755 $(BINDIR)/pkidb $(DESTDIR)/usr/bin
+
+install-man:
+	install -m 0644 $(DOCDIR)/man/man1/pkidb.1 $(DESTDIR)/usr/share/man/man1
+
+install-etc:
+	install -m 0644 $(ETCDIR)/config.ini.example $(DESTDIR)/etc/pkidb
+	install -m 0644 $(ETCDIR)/template.example $(DESTDIR)/etc/pkidb
 
 clean:
 	/bin/rm -f bin/pkidb

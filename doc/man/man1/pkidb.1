@@ -1,0 +1,1634 @@
+.TH pkdib 1 "December 26th, 2015" "Version 0.8.14.1"
+.SH NAME
+pkidb - PKI system based on a SQL database back end
+
+.SH SYNOPSIS
+.B
+pkidb
+[
+.I
+options
+] 
+.I
+command [
+.I commandoptions
+]
+
+.SH DESCRIPTION
+
+pkidb is a PKI tool to issue and manage certificates and certificate live cycle
+
+.SH OPTIONS
+.B \-V
+.br
+.RS
+Show version.
+.RE
+
+.B \-c \c
+.I configfile
+.br
+.B \-\-config=\c
+.I configfile
+.br
+.RS
+Use 
+.I configfile
+as configuration file instead of the default /etc/pki/config.ini
+.RE
+
+.SH COMMANDS
+
+.BR add-dummy
+.RS
+Add a dummy certificate identified by the serial number.  If the serial number is not given on the command line it will be
+read from standard input.  This can be used if the certificate has been issued but the certificate
+file is not present (e.g. during a migration) but the serial number and optionally the start date, end date or subject is known.
+.RE
+
+.RS
+.B \-S \c
+.I subject
+.br
+.B \-\-subject=\c
+.I subject
+.RS
+Certificate subject.
+.RE
+.RE
+
+.RS
+.B \-s \c
+.I start
+.br
+.B \-\-start=\c
+.I start
+.RS
+Start of the certificates validity period. 
+.I start
+is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME string in the format YYYYMMDDhhmmssZ
+.RE
+.RE
+
+.RS
+.B \-e \c
+.I end
+.br
+.B \-\-end=\c
+.I end
+.RS
+End of the certificates validity period. 
+.I end
+is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME string in the format YYYYMMDDhhmmssZ
+.RE
+.RE
+
+.BR backup
+.RS
+Dumps the content of the back end database in JSON format.
+This can be used to backup the PKI database and is the only supported way to migrate between different back end types.
+If no output file (option -o) has been given it will be written to standard output.
+.RE
+
+.RS
+.B \-o \c
+.I outputfile
+.br
+.B \-\-output=\c
+.I outputfile
+.RS
+Write database dump to
+.I outputfile
+instead of standard output.
+.RE
+.RE
+
+.BR delete
+.RS
+Deletes a certificate identified by the serial number. If the serial number is not given on the command line it will be read from standard input.
+.RE
+
+.BR export
+.RS
+Dumps base64 encoded X509 data of a certificate. The serial number of the certificate must be given. If not given it will be read from the standard input.
+The certificate will be written to standard output or to a file if the -o option is used.
+.RE
+
+.RS
+.B \-o \c
+.I outputfile
+.br
+.B \-\-output=\c
+.I outputfile
+.RS
+Write certificate to
+.I outputfile
+instead of standard output
+.RE
+.RE
+
+.BR gencrl
+.RS
+Generate certificate revocation list containing information about revoked certificates. The certificate revocation list will be written to standard output or to a file if the -o option is used.
+.RE
+
+.RS
+.B \-o \c
+.I outputfile
+.br
+.B \-\-output=\c
+.I outputfile
+.RS
+Write new certificate to
+.I outputfile
+instead of standard output
+.RE
+
+.RE
+.BR healthcheck
+.RS
+Verify integrity of the stored certificate data. This is done by extracting the certificate data from the certificate stored in the database and compare the values against the database.
+.RE
+
+.RS
+.B \-f
+.br
+.B \-\-fix
+.RS
+If there are differences, fix them.
+.RE
+.RE
+
+.RE
+.RE
+
+.RE
+.BR housekeeping
+.RS
+General "housekeeping". Checking all certificates in the database for expiration, renew auto renewable certificates (if option -a is used). This should be run at regular intervals.
+.br
+Certificates marked as auto renewable will never be renewed if they have been revoked.
+.RE
+
+.RS
+.B \-a
+.br
+.B \-\-auto-renew
+.RS
+Certificates marked as auto renewable will be renewed.
+.RE
+
+.B \-p \c
+.I period
+.br
+.B \-\-period=\c
+.I period
+.RS
+Certificates marked as auto renewable will be renewed for
+.I period
+day instead of the validity period stored in the back end database.
+.RE
+.RE
+
+.BR import
+.RS
+Import a certificate. If a file name is given it will be read from the file, otherwise it will be read from standard input.
+.RE
+
+.RS
+.B \-a
+.br
+.B \-\-auto-renew
+.RS
+Certificates marked as auto renewable will be renewed.
+.RE
+
+.B \-c \c
+.I csr_file
+.br
+.B \-\-csr=\c
+.I csr_file
+.RS
+Certificate signing request used for certificate.
+.RE
+
+.B \-d \c
+.I delta_period
+.br
+.B \-\-delta=\c
+.I delta_period
+.RS
+For auto renewable certificates the auto renew process starts if the time til expiration is less than
+.I delta_period
+days.
+.RE
+
+.B \-p \c
+.I period
+.br
+.B \-\-period=\c
+.I period
+.RS
+Certificates marked as auto renewable will be renewed for
+.I period
+day instead of the default validity period defined in the configuration file.
+.RE
+
+.B \-r \c
+.I reason\c
+,\c
+.I time
+.br
+.B \-\-revoked=\c
+.I reason\c
+,\c
+.I time
+.RS
+Mark certificate as revoked. \c
+.I reason \c
+can be one of:
+.RS
+
+.I unspecified
+.br
+.I keyCompromise
+.br
+.I CACompromise
+.br
+.I affiliationChanged
+.br
+.I superseded
+.br
+.I cessationOfOperation
+.br
+.I certificateHold
+.br
+.I privilegeWithdrawn
+.br
+.I removeFromCRL
+.br
+.I aACompromise
+
+.RE
+.I time \c
+is the UNIX epoch of the revocation or the ASN1 GERNERALIZEDTIME string in the format YYYYMMDDhhmmssZ
+.RE
+.RE
+
+.BR list
+.RS
+ List serial numbers of certificates. The list will be written to standard output if the option -o is not used.
+.RE
+
+.RS
+.B \-e \c
+.br
+.B \-\-expired\c
+.RS
+List serial numbers of expired certificates.
+.RE
+.RE
+
+.RS
+.B \-h \c
+.br
+.B \-\-hex\c
+.RS
+Print serial number as hexadecimal number.
+.RE
+.RE
+
+.RS
+.B \-i \c
+.br
+.B \-\-invalid\c
+.RS
+List serial numbers of invalid certificates. Certificates are considered invalid if their notBefore time is in the future.
+.RE
+.RE
+
+.RS
+.B \-o \c
+.I outputfile
+.br
+.B \-\-output=\c
+.I outputfile
+.RS
+Write new certificate to
+.I outputfile
+instead of standard output
+.RE
+.RE
+
+.RS
+.B \-r \c
+.br
+.B \-\-revoked\c
+.RS
+List serial numbers of revoked certificates.
+.RE
+.RE
+.RS
+.B \-t \c
+.br
+.B \-\-temporary\c
+.RS
+List certificates marked as temporary. Temporary certificates are dummy settings used to lock serial numbers during signing of a certificate signing request.
+.RE
+.RE
+
+.RS
+.B \-v \c
+.br
+.B \-\-valid\c
+.RS
+List serial numbers of valid certificates. A certificates is considered valid if it is not temporary, not revoked and the validity period (notBefore .. notAfter) has started and the certificate is not expired.
+.RE
+.RE
+
+.BR renew
+.RS
+Renew a certificate. The serial number of the certificate must be given. If not given it will be read from the standard input. The new certificate will be written to standard output or to a file if the -o option is used.
+.RE
+
+.RS
+.B \-o \c
+.I outputfile
+.br
+.B \-\-output=\c
+.I outputfile
+.RS
+Write new certificate to
+.I outputfile
+instead of standard output
+.RE
+.RE
+
+.RS
+.B \-p \c
+.I period
+.br
+.B \-\-period=\c
+.I period
+.RS
+New validity period for renewed certificate. Default is
+.I validity_period
+from configuration file.
+.RE
+.RE
+
+.BR restore
+.RS
+Restores database from a JSON file generated with the
+.B backup
+command. If the filename of the input data is given on the command line it will be read, otherwise input will be read from standard input
+.RE
+
+.BR revoke
+.RS
+Revoke a certificate. Serial number of the certificate to revoke must be used. If not given on the command line it will be read from standard input.
+.RE
+
+.RS
+.B \-f
+.br
+.B \-\-force
+.RS
+Revoke certificate by it's serial number event it is not present in the database. A dummy entry will be inserted in the database and marked as revoked.
+.RE
+.RE
+
+.RS
+.B \-r \c
+.I reason
+.br
+.B \-\-reason=\c
+.I reason
+.RS
+Set revocation reason for certificate. \c
+.I reason \c
+can be one of:
+.RS
+
+.I unspecified
+.br
+.I keyCompromise
+.br
+.I CACompromise
+.br
+.I affiliationChanged
+.br
+.I superseded
+.br
+.I cessationOfOperation
+.br
+.I certificateHold
+.br
+.I privilegeWithdrawn
+.br
+.I removeFromCRL
+.br
+.I aACompromise
+.RE
+
+If no reason is given, the default
+.I unspecified
+is used.
+.RE
+.RE
+
+.RS
+.B \-R \c
+.I revdate
+.br
+.B \-\-revocation-date=\c
+.I revdate
+.RS
+Set revocation date for certificate.
+.I revdate
+is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME string in the format YYYYMMDDhhmmssZ. If not given, the current date will be used.
+.RE
+.RE
+
+.BR search
+.RS
+.RS
+Search certificate subject for a given string. Search string can be given on the command line. If omitted it will be read from standard input. SQL wild cards like % can be used. The serial numbers matching the search will be printed to standard output.
+.RE
+.RE
+
+.BR set
+.RS
+.RS
+Modify meta data of a certificate identified by the serial number.  The serial number of the certificate must be given on the command line or will be read from the standard input.
+.RE
+
+.RS
+.B \-A \c
+.br
+.B \-\-auto-renew\c
+.RS
+Mark a certificate as auto renewable.
+.RE
+.RE
+
+
+.RS
+.B \-P \c
+.I period
+.br
+.B \-\-auto-renew-start-period=\c
+.I period
+.RS
+Set auto renew start period in days. If there are less than 
+.I period
+days. left until certificate expiration it will be renewed. The 
+.B housekeeping
+command will renew the certificate.
+.RE
+.RE
+
+
+.RS
+.B \-V \c
+.I period
+.br
+.B \-\-auto-renew-validity-period=\c
+.I period
+.RS
+Renew the certificate for
+.I period
+days. If not specified the setting from the configuration file will be used.
+.RE
+.RE
+
+
+.RS
+.B \-a \c
+.br
+.B \-\-no-auto-renew\c
+.RS
+Remove auto renewable flag from certificate meta data.
+.RE
+.RE
+
+.RS
+.B \-c \c
+.I signing_request
+.br
+.B \-\-csr=\c
+.I signing_request
+.RS
+Set certificate signing request.
+.RE
+.RE
+
+.RE
+.RE
+
+.BR show
+.RS
+.RS
+Shows information of a certificate identified by the serial number.  The serial number of the certificate must be given on the command line or will be read from the standard input.
+ The certificate information will be written to standard output or to a file if the
+.B -o
+option is used.
+.RE
+
+.RS
+.B \-o \c
+.I outputfile
+.br
+.B \-\-output=\c
+.I outputfile
+.RS
+Write new certificate information to
+.I outputfile
+instead of standard output.
+.RE
+.RE
+
+.RE
+.RE
+
+.BR sign
+.RS
+Sign a certificate signing request. If a file name is given it will be read, otherwise it will be read from standard input, output will be written to standard output or to a file if -o option is used.
+.RE
+
+.RS
+.B \-E \c
+.I extdata
+.br
+.B \-\-extension=\c
+.I extdata
+.RS
+X509 extension to be included in new certificate. Can be repeated for multiple extensions. Parameter
+.I extdata
+is a comma separated list of:
+.RS
+
+.I name \c
+- Name of the X509 extension
+.br
+.I critical \c
+- Critical flag. 0: False, 1: True
+.br
+.I subject \c
+- Subject, is usually empty
+.br
+.I issuer \c
+- Issuer, is usually empty
+.br
+.I data \c
+- data of the extension
+.br
+.RE
+.RE
+.RE
+
+.RS
+.B \-K \c
+.I [critical:]:flags
+.br
+.B \-\-extended-keyusage=\c
+.I [critical:]:flags
+.RS
+Comma separated list of extended key usage bits. Prefix 
+.I critical: 
+can be used to set the critical flag. Additionally dotted numeric OID are allowed too, e.g. 1.2.3.4.5. Known extended key usage bits are defined in RFC 5280:
+.RS
+
+.I serverAuth
+.br
+.I clientAuth
+.br
+.I codeSigning
+.br
+.I emailProtection
+.br
+.I timeStamping
+.br
+.I msCodeInd
+.br
+.I msCodeCom
+.br
+.I msCTLSign
+.br
+.I msSGC
+.br
+.I msEFS
+.br
+.I nsSGC
+.br
+.RE
+.RE
+.RE
+
+.RS
+.B \-S \c
+.I alternatename
+.br
+.B \-\-san=\c
+.I alternatename
+.RS
+subjectAltName extension. Prefix
+.I critical:
+can be used to set the critical flag on the alternate name list (default: False).
+.RE
+.RE
+
+.RS
+.B \-a \c
+.br
+.B \-\-auto-renew\c
+.RS
+Mark certificate as auto renewable. The
+.B housekeeping
+command (with the 
+.I -a
+option) will take care of this.
+.RE
+.RE
+
+.RS
+.B \-b \c
+.I [critical:]data
+.br
+.B \-\-basic-constraint=\c
+.I [critical:]data
+.RS
+Set basic constraints for the new certificate. Prefix
+.I critical:
+can be used to set the critical flag on the basic constraints.
+.RE
+.RE
+
+
+.RS
+.B \-k \c
+.I [critical:]flags
+.br
+.B \-\-keyusage=\c
+.I [critical:]flags
+.RS
+Comma separated list of keyUsage bits. Prefix
+.I critical:
+can be used to set the critical flag. Known keyUsage bits according to RFC 5280 are:
+.RS
+
+.I digitalSignature
+.br
+.I nonRepudiation
+(or
+.I contentCommitment
+)
+.br
+.I keyEncipherment,
+.br
+.I dataEncipherment
+.br
+.I keyAgreement
+.br
+.I keyCertSign
+.br
+.I cRLSign
+.br
+.I encipherOnly
+.br
+.I decipherOnly
+.br
+.RE
+
+(see RFC 5280, Section 4.2.1.3 "Key Usage" for further details).
+.RE
+.RE
+
+.RS
+.B \-n \c
+.br
+.B \-\-no\-register \c
+.RS
+Don't store certificate data - except the serial number - in the database.
+The serial number is
+.I ALWAYS
+stored in the back end to avoid conflicting serial numbers of certificates (especially if the serial numbers are
+generated using "increment" strategy).
+.RE
+.RE
+
+.RS
+.B \-o \c
+.I outputfile
+.br
+.B \-\-output=\c
+.I outputfile
+.RS
+Write new certificate to
+.I outputfile
+instead of standard output
+.RE
+.RE
+
+.RS
+.B \-s \c
+.I startin
+.br
+.B \-\-start-in=\c
+.I startin
+.RS
+Validity of the new certificate starts in
+.I startin
+days. Default: now
+.RE
+.RE
+
+.RS
+.B \-t \c
+.I templatefile
+.br
+.B \-\-template=\c
+.I templatefile
+.RS
+Use a template file for certificate signing.
+.RE
+.RE
+
+.RS
+.B \-v \c
+.I validfor
+.br
+.B \-\-valid-for=\c
+.I validfor
+.RS
+New certificate will be valid for
+.I validfor
+days. Default is the defined
+.I validity_period
+in the configuration or the template file.
+.RE
+.RE
+
+.RE
+.RE
+
+.BR statistics
+.RS
+.RS
+Print small summary of stored certificates. Output will be written to standard output.
+.br
+.B Note: \c
+Only the key sizes and hashing algorithm of valid certificates are shown.
+.RE
+
+
+.SH CONFIGFILE
+The configuration file is structured like a INI file. It contains at least two sections. The 
+.B global
+section and a back end specific section based on the back end selected in the 
+.B global
+section. As it will contain sensitive information like the path and the password for the private key of your certificate authority, access to this configuration file should be restricted!
+
+Instead of using configuration settings in the configuration file, environment variables can be used instead (e.g. if run inside a docker or LXC container) or to replace single configuration settings.
+
+Except for the logging, every setting can be given as environment variable.
+
+If both the configuration file and environment variables are present for a configuration the environment variable will override the setting from the configuration file.
+
+.BR global
+.RS
+.RS
+The 
+.B global
+section contains general configuration settings. 
+.I Depending on the purpose, not all of the options must be set. For instance a configuration for a dedicated system to generate the revocation list does not need the CA key settings.
+
+.RE
+.RS
+.I backend
+.br
+
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_BACKEND
+.br
+Which database back end to use. Possible options are:
+
+.I mysql\c
+ \- MySQL, requires the mysqldb Python module
+.br
+.I pgsql\c
+ \- PostgreSQL, requires the psycopg2 Python module
+.br
+.I sqlite3\c
+ \- SQLite3, requires the pysqlite2 Python module
+.br
+.RE
+.RE
+
+.RS
+.I ca_public_key
+(alternative:
+.I ca_certificate
+)
+.br
+Environment variable:
+.I PKIDB_GLOBAL_CA_PUBLIC_KEY
+(alternative:
+.I PKIDB_GLOBAL_CA_CERTIFICATE
+)
+.br
+.RS
+Absolute path to the public key of the CA certificate.
+.RE
+.RE
+
+.RS
+.I ca_private_key
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_CA_PRIVATE_KEY
+.br
+Absolute path to the private key of the CA certificate.
+.RE
+.RE
+
+.RS
+.I ca_passphrase
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_CA_PASSPHRASE
+.br
+The passphrase to decrypt the private key of the CA certificate.
+.RE
+.RE
+
+.RS
+.I digest
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_DIGEST
+.br
+Default message digest to use for certificate signing. See 
+.IR dgst "(1)
+for a complete list of supported message digest algorithm of the current OpenSSL installation.
+.br
+Default digest is
+.B sha512\c
+ .
+.RE
+.RE
+
+.RS
+.I serial_number
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_SERIAL_NUMBER
+.br
+Method to generate new serial numbers, possible options are:
+
+.I random\c
+ \- Use random serial numbers.
+.br
+.I increment\c
+ \- Increment the last serial number.
+
+The default for the serial number generator is 
+.B random\c
+ .
+.RE
+.RE
+
+.RS
+.I validity_period
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_VALIDITY_PERIOD
+.br
+The number of days to make a certificate valid.
+.br
+Default is 
+.B 1095\c
+ days (3 years).
+.RE
+.RE
+
+.RS
+.I auto_renew_start_period
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_AUTO_RENEW_START_PERIOD
+.br
+For auto renewable certificates, the auto renewable will be run if less then
+.I auto_renew_start_period
+days are left til expiration.
+.br
+The default is 
+.B 14\c
+ days.
+.RE
+.RE
+
+.RS
+.I crl_public_key
+(alternative:
+.I crl_certificate
+)
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_CRL_PUBLIC_KEY
+(alternative:
+.I CRL_CERTIFICATE
+)
+.br
+The absolute path to the public key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter
+validity period.
+.RE
+.RE
+
+.RS
+.I crl_private_key
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_CRL_PRIVATE_KEY
+.br
+The absolute path to the private key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter
+validity period.
+.RE
+.RE
+
+.RS
+.I crl_passphrase
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_CRL_PASSPHRASE
+.br
+The passphrase to decrypt the private key of the certificate used to sign the revocation list.
+.RE
+.RE
+
+.RS
+.I crl_validity_period
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_CRL_VALIDITY_PERIOD
+.br
+The number of days before the next CRL is due.
+.br
+Default is 
+.B 7\c
+ days.
+.RE
+.RE
+
+.RS
+.I crl_digest
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_CRL_DIGEST
+.br
+Message digest algorithm to sign the certificate revocation list. See 
+.IR dgst "(1)
+for a list of valid digest algorithm for the current OpenSSL version.
+.br
+The default digest is 
+.B md5\c
+ .
+.br
+.I Note:
+Changing the message digest algorithm for CRL signing is only supported since version 0.15 of pyOpenSSL!
+.RE
+.RE
+
+.RS
+.I list_as_hex
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_LIST_AS_HEX
+.br
+Print serial numbers in the "list" output as hexadecimal.
+.br
+The default is
+.B False\c
+.RE
+.RE
+
+.RE
+.RE
+
+.BR logging
+.RS
+.RS
+The 
+.B logging
+section is optional and contains options for logging. A unique user defined string can be used for each log name. The format should be all lowercase letters and numbers and underscores (_).
+.br
+If no 
+.B logging
+section has been given (or it is empty) the default will be used (Destination: syslog, Facility: user, Log level: information)
+
+.RS
+
+.I level,destination:option
+.br
+.RS
+.I level
+describes the log level and can be one of:
+.RS
+
+.I info
+.br
+.I warning
+.br
+.I error
+.br
+.I critical
+.RE
+
+.I destination
+specify the log destination. Supported 
+.I destination
+values are:
+.RS
+
+.I file\c
+ \- log to a file.
+.br
+.I syslog\c
+ \- log via syslog.
+.br
+.RE
+
+.I option
+are 
+.I destination
+specific options. Supported options are:
+
+.RS
+.I filename\c
+ \- filename to write output for
+.I file
+destination
+.br
+.I facility\c
+ \- syslog facility for 
+.I syslog \c
+logging.
+.br
+.RE
+
+.RE
+.RE
+
+.RE
+.RE
+
+
+.BR mysql
+.RS
+.RS
+The 
+.B mysql
+section contains configuration settings for the MySQL back end.
+At least 
+.I database\c
+,
+.I user
+and
+.I password
+must be set.
+.br
+
+.RS
+.I host
+.br
+.RS
+Environment variable:
+.I PKIDB_MYSQL_HOST
+.br
+The host or IP address to connect to.
+.br
+Default is 
+.B localhost\c
+ .
+.RE
+.RE
+
+.RS
+.I port
+.br
+.RS
+Environment variable:
+.I PKIDB_MYSQL_PORT
+.br
+The port mysqld is running on.
+.br
+Default is 
+.B 3306\c
+ (the MySQL default port).
+.RE
+.RE
+
+.RS
+.I database
+.br
+.RS
+Environment variable:
+.I PKIDB_MYSQL_DATABASE
+.br
+Name of the database to connect to.
+.RE
+.RE
+
+.RS
+.I user
+.br
+.RS
+Environment variable:
+.I PKIDB_MYSQL_USER
+.br
+The user name for the database connection.
+.RE
+.RE
+
+.RS
+.I passphrase
+.br
+.RS
+Environment variable:
+.I PKIDB_MYSQL_PASSPHRASE
+.br
+The password for the 
+.I user
+of the database connection.
+.RE
+.RE
+
+.RS
+.I sslcacert
+.br
+.RS
+Environment variable:
+.I PPKIDB_MYSQL_SSLCACERT
+.br
+Path to the CA public key file (PEM format).
+.RE
+.RE
+
+.RS
+.I sslcert
+.br
+.RS
+Environment variable:
+.I PKIDB_MYSQL_SSLCERT
+.br
+Path to the client certificate (PEM format) for client authentication with SSL certificate.
+.RE
+.RE
+
+.RS
+.I sslkey
+.br
+.RS
+Environment variable:
+.I PKIDB_MYSQL_SSLKEY
+.br
+Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate.
+.RE
+.RE
+
+.RE
+.RE
+
+.BR pgsql
+.RS
+.RS
+The 
+.B pgsql
+section contains configuration settings for the PostgreSQL back end.
+At least 
+.I database\c
+,
+.I user
+and
+.I password
+must be set.
+
+.RS
+.I host
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_HOST
+.br
+The host or IP address to connect to.
+.br
+Default is 
+.B
+localhost\c
+ .
+.RE
+.RE
+
+.RS
+.I port
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_PORT
+.br
+The port postgres is running on.
+.br
+Default is 
+.B 5432\c
+ (the default port for PostgreSQL).
+
+.RE
+.RE
+
+.RS
+.I database
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_DATABASE
+.br
+Name of the database to connect to.
+.RE
+.RE
+
+.RS
+.I user
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_USER
+.br
+The user name for the database connection.
+.RE
+.RE
+
+.RS
+.I passphrase
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_PASSPHRASE
+.br
+The password for the 
+.I user
+of the database connection.
+.RE
+.RE
+
+.RS
+.I sslmode
+.RS
+Environment variable:
+.I PKIDB_PGSQL_SSLMODE
+.br
+SSL protection level (see http://www.postgresql.org/docs/current/static/libpq-ssl.html).
+.br
+Valid values for PostgreSQL 8.4 or newer are:
+.RS
+.I disable
+.br
+.RS
+Don't use SSL at all.
+.RE
+
+.I allow
+.br
+.RS
+Don't use SSL except the server enforce it.
+.RE
+
+.I prefer
+.br
+.RS
+Don't use SSL except the server supports it.
+.RE
+
+.I require
+.br
+.RS
+Use SSL but don't check the server certificate.
+.RE
+
+.I verify-ca
+.br
+.RS
+Use SSL and check if the server certificate has been signed by the correct CA.
+.RE
+
+.I verify-full
+.br
+.RS
+Use SSL and check the server name in the certificate and the signing CA of the server certificate.
+.RE
+.RE
+
+.B Note: \c
+PostgreSQL 8.3 or older only support:
+.RS
+.I allow
+.br
+.RS
+Try non-SSL connection, if this fails try to connect using SSL.
+.RE
+
+.I prefer
+.br
+.RS
+Try SSL connection, if this fails try to connect using without using SSL.
+.RE
+
+.I require
+.br
+.RS
+Only use SSL connection.
+.RE
+.RE
+
+.RE
+.RE
+
+.RS
+.I sslcacert
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_SSLCACERT
+.br
+Path to the CA public key file (PEM format).
+.br
+.B Note: \c
+This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
+.RE
+.RE
+
+.RS
+.I sslcert
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_SSLCERT
+.br
+Path to the client certificate (PEM format) for client authentication with SSL certificate.
+.br
+.B Note: \c
+This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
+.RE
+.RE
+
+.RS
+.I sslkey
+.br
+.RS
+Environment variable:
+.I PKIDB_PGSQL_SSLKEY
+.br
+Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate.
+.br
+.B Note: \c
+This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
+.RE
+.RE
+
+.RE
+.RE
+.RE
+
+.BR sqlite3
+.RS
+.RS
+The 
+.B sqlite3
+section contains configuration settings for the SQLite3 back end.
+The
+.I database
+options must be set.
+
+.RS
+.I database
+.br
+.RS
+Environment variable:
+.I PKIDB_SQLITE3_DATABASE
+.br
+The absolute path to the SQLite3 database file
+.RE
+.RE
+
+.RE
+.RE
+
+.SH TEMPLATEFILE
+Template files can be used for specific settings for certificate signing (like specific keyUsage) and a more convenient and reproducible way to sign certificates.
+Like the configuration file it is in the INI format and contains one or more sections.
+
+.BR global
+.RS
+.RS
+The 
+.B global
+section contains general settings. If the section is not present, the values from the configuration file will be used instead. The following options can be used in a template file:
+.RE
+.RE
+
+.RS
+.I validity_period
+.br
+.RS
+The number of days to make a certificate valid.
+.RE
+.RE
+
+.RS
+.I digest
+.br
+.RS
+Default message digest to use for certificate signing. See 
+.IR dgst "(1)
+for a complete list of supported message digest algorithm of the current OpenSSL installation.
+.RE
+.RE
+
+.RE
+.RE
+
+.BR extension:<extensionname>
+.RS
+.RS
+Defines the content of a X509 certificate extension with the name
+.I <extensionname>
+.I Note:
+X509 extension names are
+.B case sensitive
+(for instance keyusage and keyUsage are two different extensions!).
+.I <extensionname>
+can be a string or a numeric OID value.
+.RE
+.RE
+
+.RS
+.I critical
+.br
+.RS
+The criticality of the extensions. If omitted the default of False is used.
+.RE
+.RE
+
+.RS
+.I data[:base64]
+.br
+.RS
+The data of the X509 extension. The optional parameter 
+.I :base64
+can be used to specify base64 encoded binary data.
+.RE
+.RE
+
+.RE
+.RE
+
+.SH EXAMPLES
+
+Configuration file:
+.RS
+.nf
+
+[global]
+# back end - to store data
+#
+# mysql - MySQL (not implemented yet)
+# sqlite3 - SQLite3 (not implemented yet)
+# pgsql - PostgreSQL
+backend = pgsql
+
+# path to public and private ca key
+# and the passphrase protecting it.
+ca_public_key = /path/to/public/ca/certificate
+ca_private_key = /path/to/private/ca/certificate
+ca_passphrase = ItsSoFluffyImGonnaDie!
+
+# default message digest to use when signing certificates
+# see man 1 dgst for supported digest algorithm
+digest = sha512
+
+# use random serial number for certificates (random) or increment
+# the serial number (increment)
+serial_number = random
+
+# default validity period for new certificates
+validity_period = 1095
+
+# renew automatically renewable certificates if less than auto_renew_start_period days left
+auto_renew_start_period = 1
+
+# path to crl signing certificate and private
+# key and the passphrase protecting it
+crl_public_key = /home/maus/_/python-pkidb/tmp/tmp/crl.pem
+crl_private_key = /home/maus/_/python-pkidb/tmp/tmp/crl.key
+crl_passphrase = AssembleTheMinions!
+
+# number of days before the next crl is due
+crl_validity_period = 30
+
+# message digest to use for crl signing
+crl_digest = sha512
+
+[logging]
+# format:
+# <user_defined_string>=<level>,<destination>:<option>
+# 
+# destination: file
+# 
+# option - absolute path to filename
+#
+# destination: syslog
+#
+# option - facility
+# 
+log_warn_to_file=warning,file:/var/log/pkidb.log
+log_to_syslog=info,syslog:user
+
+# Back end configurations
+[pgsql]
+host = 127.0.0.1
+port = 5432
+user = dbuser
+passphrase = DoesThisCountAsAnnoying?
+database = pkidb
+sslmode = verify-full
+sslcacert = /etc/ssl/certs/cacert.pem
+
+[sqlite3]
+database = /path/to/sqlite/file
+
+[mysql]
+host = 127.0.0.1
+port = 3306
+user = dbuser
+passphrase = DoesThisCountAsAnnoying?
+
+.fi
+.RE
+
+Template file:
+
+.RS
+.nf
+; templates can be used to generate certificates with similar
+; characteristics
+
+; the global section defines general parameters for certificate signing:
+;  validity_period - validity period for certificates
+;  digest - message digest used to sign public key
+[global]
+validity_period=365
+digest=sha512
+
+; extensions to include in the certificates
+; section must be named [extension:<extensionname>]
+; (Attention: extension name is case _sensitive_
+; so keyusage and keyUsage are two different extensions!)
+;
+; and contain the following options:
+;
+; critical - True or False (the default), extension will be marked as critical
+; data[:base64] - data for the extension, the optional flag :base64
+;                 can be used to define base64 encoded binary data
+;                 that will be decoded and included in the extension
+; subject - optional subject for certificate extension
+; issuer - optional issuer for certificate extension
+[extension:keyUsage]
+critical=True
+data=digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment
+
+; [extension:1.2.3.4.5.6]
+; critcal = False
+; data:base64=SXQncyBzbyBmbHVmZnksIEknbSBnb25uYSBESUUh
+; subject=<subject>
+; issuer=<issuer>
+.fi
+.RE
+
+.SH BUGS
+I'm sure!
+
+.SH AUTHOR
+Andreas Maus <python-pkidb@ypbind.de>
+.SH SEE ALSO
