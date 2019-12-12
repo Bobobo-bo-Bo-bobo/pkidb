@@ -7,6 +7,7 @@ func MergeSiteConfiguration(gcfg *PKIConfiguration, scfg *PKIConfiguration) *PKI
 	ncfg := &PKIConfiguration{
 		Global:   gcfg.Global,
 		Database: &gdbcfg,
+		Logging:  gcfg.Logging,
 	}
 
 	if scfg.Global.CaPublicKey != "" {
@@ -107,6 +108,10 @@ func MergeSiteConfiguration(gcfg *PKIConfiguration, scfg *PKIConfiguration) *PKI
 
 	if scfg.Database.SSLMode != "" {
 		ncfg.Database.SSLMode = scfg.Database.SSLMode
+	}
+
+	if len(scfg.Logging) > 0 {
+		ncfg.Logging = append(ncfg.Logging, scfg.Logging...)
 	}
 
 	return ncfg
