@@ -59,7 +59,7 @@ crl_validity_period = 30
 # message digest to use for crl signing
 crl_digest = sha512
 
-# show serial numbers in "list" output as hexadecimal values
+# show serial numbers in output as hexadecimal values
 # default: false
 list_as_hex = True
 

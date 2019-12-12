@@ -73,6 +73,7 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 		if err != nil {
 			return err
 		}
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s revoked", sn))
 	}
 	return nil
 }

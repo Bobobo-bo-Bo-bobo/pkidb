@@ -56,6 +56,8 @@ func CmdSearch(cfg *PKIConfiguration, args []string) error {
 				out += fmt.Sprintf("%s\n", serial.Text(10))
 			}
 		}
+
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s found from search request %s", serial.Text(10), srch))
 	}
 
 	if *output == "" {

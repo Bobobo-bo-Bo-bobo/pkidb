@@ -1688,6 +1688,7 @@ func (db PKIDBBackendPgSQL) Housekeeping(cfg *PKIConfiguration, autoRenew bool, 
 						return err
 					}
 				}
+				LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s renewed during housekeeping", sn))
 			}
 		}
 	}

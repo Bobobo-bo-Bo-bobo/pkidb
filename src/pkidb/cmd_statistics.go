@@ -28,5 +28,6 @@ func CmdStatistics(cfg *PKIConfiguration, args []string) error {
 		}
 	}
 
+	LogMessage(cfg, LogLevelInfo, "Statistics dumped")
 	return nil
 }

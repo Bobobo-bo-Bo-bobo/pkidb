@@ -126,5 +126,6 @@ func CmdImport(cfg *PKIConfiguration, args []string) error {
 		return err
 	}
 
+	LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s imported", ic.Certificate.SerialNumber))
 	return nil
 }

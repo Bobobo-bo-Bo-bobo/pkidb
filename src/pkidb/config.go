@@ -17,6 +17,7 @@ type PKIConfiguration struct {
 	Global         GlobalConfiguration
 	Database       *DatabaseConfiguration
 	DBBackend      PKIDBBackend
+	Logging        []LogConfiguration
 }
 
 // GlobalConfiguration - Global configration (section global from ini file)
@@ -53,6 +54,14 @@ type DatabaseConfiguration struct {
 	SSLKey    string `ini:"sslkey"`
 	SSLMode   string `ini:"sslmode"`
 	dbhandle  *sql.DB
+}
+
+// LogConfiguration - Log configuration
+type LogConfiguration struct {
+	Level       string
+	LogLevel    int
+	Destination string
+	Option      string
 }
 
 // EnvConfig - For mapping of environment variables to configuration settings

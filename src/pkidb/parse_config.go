@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	ini "gopkg.in/ini.v1"
+	"strings"
 )
 
 // ParseConfiguration - Parse configuration file
@@ -27,72 +28,111 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 	}
 
 	// TODO: Parse logging information
+	logging, err := cfg.GetSection("logging")
+	if err == nil {
+		keys := logging.KeyStrings()
+		for _, k := range keys {
+			key, err := logging.GetKey(k)
+			if err != nil {
+				continue
+			}
+			value := strings.TrimSpace(key.String())
+			if value == "" {
+				return nil, fmt.Errorf("%s: Invalid logging configuration %s=", GetFrame(), k)
+			}
+			ldo := strings.SplitN(value, ",", 2)
 
-	// TODO: Parse and handle site configuration
+			level := ldo[0]
+			if level == "" {
+				return nil, fmt.Errorf("%s: Invalid logging configuration %s=%s", GetFrame(), k, value)
+			}
+
+			llevel, found := LogLevelMap[strings.ToLower(level)]
+			if !found {
+				return nil, fmt.Errorf("%s: Invalid log level %s", GetFrame(), level)
+			}
+
+			do := strings.SplitN(ldo[1], ":", 2)
+			destination := strings.ToLower(do[0])
+			option := do[1]
+			if destination != "file" && destination != "syslog" {
+				return nil, fmt.Errorf("%s: Invalid log destination %s", GetFrame(), destination)
+			}
+
+			l := LogConfiguration{
+				Level:       level,
+				Destination: destination,
+				Option:      option,
+				LogLevel:    llevel,
+			}
+
+			config.Logging = append(config.Logging, l)
+		}
+	}
 
 	// [<database>]
 	switch config.Global.Backend {
 	case "mysql":
 		db, err := cfg.GetSection(config.Global.Backend)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		err = db.MapTo(&dbconfig)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.Database = &dbconfig
 		var mysql PKIDBBackendMySQL
 		err = mysql.Initialise(&config)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.DBBackend = mysql
 	case "pgsql":
 		db, err := cfg.GetSection(config.Global.Backend)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		err = db.MapTo(&dbconfig)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.Database = &dbconfig
 		var pgsql PKIDBBackendPgSQL
 		err = pgsql.Initialise(&config)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.DBBackend = pgsql
 	case "sqlite3":
 		db, err := cfg.GetSection(config.Global.Backend)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 
 		err = db.MapTo(&dbconfig)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.Database = &dbconfig
 		var sql3 PKIDBBackendSQLite3
 		err = sql3.Initialise(&config)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.DBBackend = sql3
 	case "":
-		return nil, fmt.Errorf("%s: No database backend found in configuration file", GetFrame())
+		return &config, fmt.Errorf("%s: No database backend found in configuration file", GetFrame())
 
 	default:
-		return nil, fmt.Errorf("%s: Unknown database backend found in configuration file", GetFrame())
+		return &config, fmt.Errorf("%s: Unknown database backend found in configuration file", GetFrame())
 	}
 
 	err = LoadSSLKeyPairs(&config)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	return &config, nil
 }

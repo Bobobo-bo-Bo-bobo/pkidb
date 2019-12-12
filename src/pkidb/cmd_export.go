@@ -69,6 +69,8 @@ func CmdExport(cfg *PKIConfiguration, args []string) error {
 				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 			}
 		}
+
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Exporting certificate with serial number %s", sn))
 	}
 
 	if *output == "" {

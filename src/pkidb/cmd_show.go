@@ -63,6 +63,8 @@ func CmdShow(cfg *PKIConfiguration, args []string) error {
 		if i < len(snList)-1 {
 			out += "\n"
 		}
+
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Information about certificate with serial number %s displayed", sn))
 	}
 
 	if *output == "" {

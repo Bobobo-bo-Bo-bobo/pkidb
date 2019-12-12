@@ -91,6 +91,7 @@ func CmdAddDummy(cfg *PKIConfiguration, args []string) error {
 		if err != nil {
 			return err
 		}
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Dummy certificate with serial number %s added", sn))
 	}
 	return nil
 }

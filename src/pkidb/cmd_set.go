@@ -124,6 +124,7 @@ func CmdSet(cfg *PKIConfiguration, args []string) error {
 				return err
 			}
 		}
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Meta information set for certificate with serial number %s", sn))
 	}
 	return nil
 }

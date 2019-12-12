@@ -67,6 +67,8 @@ func CmdList(cfg *PKIConfiguration, args []string) error {
 		} else {
 			outlist += fmt.Sprintf("%s\n", sn.Text(10))
 		}
+
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s listed", sn))
 	}
 
 	_, err = fmt.Fprintf(fd, "%s", outlist)

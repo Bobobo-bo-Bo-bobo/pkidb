@@ -3,10 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"math/big"
 	"os"
-	"time"
 )
 
 func main() {
@@ -19,11 +17,6 @@ func main() {
 	var command string
 	var sites = make(map[string]*PKIConfiguration)
 	var err error
-
-	var logFmt = new(log.TextFormatter)
-	logFmt.FullTimestamp = true
-	logFmt.TimestampFormat = time.RFC3339
-	log.SetFormatter(logFmt)
 
 	flag.Usage = showUsage
 	flag.Parse()
@@ -46,15 +39,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	MaximumSerialNumber = new(big.Int)
-	MaximumSerialNumber, ok = MaximumSerialNumber.SetString(MaximumSerialNumberString, 0)
-	if !ok {
-		log.WithFields(log.Fields{"maximum_serial_number_string": MaximumSerialNumberString}).Fatal("Can't generate maximal serial number")
-	}
-
 	config, err = ParseConfiguration(*configFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Can't parse configuration file: %s\n", err)
+		LogMessage(config, LogLevelCritical, err.Error())
 		os.Exit(1)
 	}
 
@@ -67,7 +54,7 @@ func main() {
 	if config.Global.Sites != "" {
 		sites, err = LoadSiteConfigurations(config.Global.Sites)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
+			LogMessage(config, LogLevelCritical, err.Error())
 			os.Exit(1)
 		}
 	}
@@ -75,7 +62,7 @@ func main() {
 	if *site != "" {
 		scfg, found := sites[*site]
 		if !found {
-			fmt.Fprintf(os.Stderr, "%s: Can't find a configuration for site %s", GetFrame(), *site)
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("%s: Can't find a configuration for site %s", GetFrame(), *site))
 			os.Exit(1)
 		}
 		config = MergeSiteConfiguration(config, scfg)
@@ -83,17 +70,24 @@ func main() {
 		// if sites are configured in the configuration file a default_site MUST be provided
 		if config.Global.Sites != "" {
 			if config.Global.DefaultSite != "" {
-				fmt.Fprintf(os.Stderr, "%s: sites are defined in %s but not default_site", GetFrame(), *configFile)
+				LogMessage(config, LogLevelCritical, fmt.Sprintf("%s: sites are defined in %s but not default_site", GetFrame(), *configFile))
 				os.Exit(1)
 			}
 
 			dcfg, found := sites[config.Global.DefaultSite]
 			if !found {
-				fmt.Fprintf(os.Stderr, "%s: no configuration found for default_site %s", GetFrame(), config.Global.DefaultSite)
+				LogMessage(config, LogLevelCritical, fmt.Sprintf("%s: no configuration found for default_site %s", GetFrame(), config.Global.DefaultSite))
 				os.Exit(1)
 			}
 			config = MergeSiteConfiguration(config, dcfg)
 		}
+	}
+
+	MaximumSerialNumber = new(big.Int)
+	MaximumSerialNumber, ok = MaximumSerialNumber.SetString(MaximumSerialNumberString, 0)
+	if !ok {
+		LogMessage(config, LogLevelCritical, fmt.Sprintf("%s: Can't generate maximal serial number\n", GetFrame()))
+		os.Exit(1)
 	}
 
 	command = trailingArguments[0]
@@ -141,7 +135,7 @@ func main() {
 
 	err = config.DBBackend.CloseDatabase(config.Database.dbhandle)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		LogMessage(config, LogLevelCritical, err.Error())
 		os.Exit(1)
 	}
 	os.Exit(0)

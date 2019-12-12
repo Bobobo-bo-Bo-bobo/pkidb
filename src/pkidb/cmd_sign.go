@@ -205,5 +205,6 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		}
 	}
 
+	LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s created from certificate signing request", cert.SerialNumber))
 	return nil
 }

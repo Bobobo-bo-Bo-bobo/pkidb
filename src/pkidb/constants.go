@@ -2,11 +2,12 @@ package main
 
 import (
 	"crypto/x509"
+	"log/syslog"
 	"math/big"
 )
 
 const name = "pkidb"
-const version = "1.0.0-2019.12.11"
+const version = "1.0.0-2019.12.12"
 
 // DummyCertificateSubject - subject for dummy entry
 const DummyCertificateSubject = "dummy entry"
@@ -296,6 +297,61 @@ const (
 	// PKICertificateStatusDummy - dummy certificate
 	PKICertificateStatusDummy int = 5
 )
+
+const (
+	// LogLevelInfo - lop level info
+	LogLevelInfo int = iota
+	// LogLevelWarning - log level warning
+	LogLevelWarning
+	// LogLevelCritical - log level critical
+	LogLevelCritical
+)
+
+// LogLevelMap - map log level to constants
+var LogLevelMap = map[string]int{
+	"info":     LogLevelInfo,
+	"warn":     LogLevelWarning,
+	"warning":  LogLevelWarning,
+	"critical": LogLevelCritical,
+}
+
+// LogLevelSyslogPrio - map log level to syslog priority
+var LogLevelSyslogPrio = map[int]syslog.Priority{
+	LogLevelInfo:     syslog.LOG_INFO,
+	LogLevelWarning:  syslog.LOG_WARNING,
+	LogLevelCritical: syslog.LOG_CRIT,
+}
+
+// SyslogFacilityMap - map syslog facility
+var SyslogFacilityMap = map[string]syslog.Priority{
+	"kernel":   syslog.LOG_KERN,
+	"user":     syslog.LOG_USER,
+	"mail":     syslog.LOG_MAIL,
+	"daemon":   syslog.LOG_DAEMON,
+	"auth":     syslog.LOG_AUTH,
+	"syslog":   syslog.LOG_SYSLOG,
+	"lpr":      syslog.LOG_LPR,
+	"news":     syslog.LOG_NEWS,
+	"uucp":     syslog.LOG_UUCP,
+	"cron":     syslog.LOG_CRON,
+	"authpriv": syslog.LOG_AUTHPRIV,
+	"ftp":      syslog.LOG_FTP,
+	"local0":   syslog.LOG_LOCAL0,
+	"local1":   syslog.LOG_LOCAL1,
+	"local2":   syslog.LOG_LOCAL2,
+	"local3":   syslog.LOG_LOCAL3,
+	"local4":   syslog.LOG_LOCAL4,
+	"local5":   syslog.LOG_LOCAL5,
+	"local6":   syslog.LOG_LOCAL6,
+	"local7":   syslog.LOG_LOCAL7,
+}
+
+// LogLevelReverseMap - reverse map constants -> log level
+var LogLevelReverseMap = map[int]string{
+	LogLevelInfo:     "INFO",
+	LogLevelWarning:  "WARNING",
+	LogLevelCritical: "CRITICAL",
+}
 
 // ListAllSerialNumbers - list all serial numbers
 const ListAllSerialNumbers int = 42

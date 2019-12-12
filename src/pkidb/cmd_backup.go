@@ -52,5 +52,6 @@ func CmdBackup(cfg *PKIConfiguration, args []string) error {
 		}
 	}
 
+	LogMessage(cfg, LogLevelInfo, "Database backup created")
 	return nil
 }

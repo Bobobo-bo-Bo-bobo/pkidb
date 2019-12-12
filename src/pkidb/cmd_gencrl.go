@@ -48,5 +48,6 @@ func CmdGenCRL(cfg *PKIConfiguration, args []string) error {
 		}
 	}
 
+	LogMessage(cfg, LogLevelInfo, "Certificate revocation list created")
 	return nil
 }

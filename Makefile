@@ -7,7 +7,6 @@ DBDIR	= $(CURDIR)/sql
 PROGRAMS = pkidb
 
 depend:
-	env GOPATH=$(GOPATH) go get -u github.com/sirupsen/logrus
 	env GOPATH=$(GOPATH) go get -u gopkg.in/ini.v1
 	env GOPATH=$(GOPATH) go get -u github.com/nu7hatch/gouuid
 	env GOPATH=$(GOPATH) go get -u github.com/youmark/pkcs8

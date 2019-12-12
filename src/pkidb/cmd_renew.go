@@ -135,6 +135,8 @@ func CmdRenew(cfg *PKIConfiguration, args []string) error {
 		if err != nil {
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
+
+		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s renewed", s))
 	}
 
 	if *output != "" {

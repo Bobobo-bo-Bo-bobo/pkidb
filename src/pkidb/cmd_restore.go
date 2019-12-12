@@ -41,5 +41,6 @@ func CmdRestore(cfg *PKIConfiguration, args []string) error {
 		return err
 	}
 
+	LogMessage(cfg, LogLevelInfo, "Database dump restored")
 	return nil
 }
