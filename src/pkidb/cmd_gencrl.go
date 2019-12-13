@@ -22,6 +22,10 @@ func CmdGenCRL(cfg *PKIConfiguration, args []string) error {
 		return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
+	if cfg.CRLPublicKey == nil || cfg.CRLCertificate == nil {
+		return fmt.Errorf("%s: No public/private key for CRL signing", GetFrame())
+	}
+
 	crl, err := GenerateCRL(cfg)
 	if err != nil {
 		return err

@@ -41,6 +41,10 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 		return fmt.Errorf("%s: Too many arguments", GetFrame())
 	}
 
+	if cfg.CAPublicKey == nil || cfg.CACertificate == nil {
+		return fmt.Errorf("%s: No public/private key for signing CA", GetFrame())
+	}
+
 	if len(cmdSignTrailing) == 0 {
 		csrData, err = ReadCSR("")
 	} else {

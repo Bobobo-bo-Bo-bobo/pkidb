@@ -83,6 +83,12 @@ func main() {
 		}
 	}
 
+	FillConfigurationDefaults(config)
+	err = ValidateConfiguration(config)
+	if err != nil {
+		LogMessage(config, LogLevelCritical, err.Error())
+	}
+
 	MaximumSerialNumber = new(big.Int)
 	MaximumSerialNumber, ok = MaximumSerialNumber.SetString(MaximumSerialNumberString, 0)
 	if !ok {
