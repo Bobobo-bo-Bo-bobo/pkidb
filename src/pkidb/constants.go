@@ -7,7 +7,7 @@ import (
 )
 
 const name = "pkidb"
-const version = "1.0.0-2019.12.12"
+const version = "1.0.0"
 
 // DummyCertificateSubject - subject for dummy entry
 const DummyCertificateSubject = "dummy entry"
@@ -266,6 +266,7 @@ var EnvironmentConfigMap = map[string]EnvConfig{
 	"PKIDB_MYSQL_SSLCACERT":                EnvConfig{Section: "mysql", ConfigKey: "sslcacert"},
 	"PKIDB_MYSQL_SSLCERT":                  EnvConfig{Section: "mysql", ConfigKey: "sslcert"},
 	"PKIDB_MYSQL_SSLKEY":                   EnvConfig{Section: "mysql", ConfigKey: "sslkey"},
+	"PKIDB_MYSQL_SSLMODE":                  EnvConfig{Section: "pgsql", ConfigKey: "sslmode"},
 	"PKIDB_MYSQL_USER":                     EnvConfig{Section: "mysql", ConfigKey: "user"},
 	"PKIDB_PGSQL_DATABASE":                 EnvConfig{Section: "pgsql", ConfigKey: "database"},
 	"PKIDB_PGSQL_HOST":                     EnvConfig{Section: "pgsql", ConfigKey: "host"},

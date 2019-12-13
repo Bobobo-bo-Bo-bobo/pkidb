@@ -1,4 +1,4 @@
-.TH pkdib 1 "December 26th, 2015" "Version 0.8.14.1"
+.TH pkdib 1 "December 13th, 2019" "Version 1.0.0"
 .SH NAME
 pkidb - PKI system based on a SQL database back end
 
@@ -19,15 +19,12 @@ command [
 pkidb is a PKI tool to issue and manage certificates and certificate live cycle
 
 .SH OPTIONS
-.B \-V
+.B \-\-version
 .br
 .RS
 Show version.
 .RE
 
-.B \-c \c
-.I configfile
-.br
 .B \-\-config=\c
 .I configfile
 .br
@@ -47,9 +44,6 @@ file is not present (e.g. during a migration) but the serial number and optional
 .RE
 
 .RS
-.B \-S \c
-.I subject
-.br
 .B \-\-subject=\c
 .I subject
 .RS
@@ -58,9 +52,6 @@ Certificate subject.
 .RE
 
 .RS
-.B \-s \c
-.I start
-.br
 .B \-\-start=\c
 .I start
 .RS
@@ -71,9 +62,6 @@ is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME string in the forma
 .RE
 
 .RS
-.B \-e \c
-.I end
-.br
 .B \-\-end=\c
 .I end
 .RS
@@ -87,13 +75,10 @@ is the UNIX epoch of the revocation or ASN1 GERNERALIZEDTIME string in the forma
 .RS
 Dumps the content of the back end database in JSON format.
 This can be used to backup the PKI database and is the only supported way to migrate between different back end types.
-If no output file (option -o) has been given it will be written to standard output.
+If no output file (option --output) has been given it will be written to standard output.
 .RE
 
 .RS
-.B \-o \c
-.I outputfile
-.br
 .B \-\-output=\c
 .I outputfile
 .RS
@@ -111,13 +96,10 @@ Deletes a certificate identified by the serial number. If the serial number is n
 .BR export
 .RS
 Dumps base64 encoded X509 data of a certificate. The serial number of the certificate must be given. If not given it will be read from the standard input.
-The certificate will be written to standard output or to a file if the -o option is used.
+The certificate will be written to standard output or to a file if the --output option is used.
 .RE
 
 .RS
-.B \-o \c
-.I outputfile
-.br
 .B \-\-output=\c
 .I outputfile
 .RS
@@ -129,13 +111,10 @@ instead of standard output
 
 .BR gencrl
 .RS
-Generate certificate revocation list containing information about revoked certificates. The certificate revocation list will be written to standard output or to a file if the -o option is used.
+Generate certificate revocation list containing information about revoked certificates. The certificate revocation list will be written to standard output or to a file if the --output option is used.
 .RE
 
 .RS
-.B \-o \c
-.I outputfile
-.br
 .B \-\-output=\c
 .I outputfile
 .RS
@@ -151,8 +130,6 @@ Verify integrity of the stored certificate data. This is done by extracting the 
 .RE
 
 .RS
-.B \-f
-.br
 .B \-\-fix
 .RS
 If there are differences, fix them.
@@ -171,16 +148,11 @@ Certificates marked as auto renewable will never be renewed if they have been re
 .RE
 
 .RS
-.B \-a
-.br
 .B \-\-auto-renew
 .RS
 Certificates marked as auto renewable will be renewed.
 .RE
 
-.B \-p \c
-.I period
-.br
 .B \-\-period=\c
 .I period
 .RS
@@ -196,25 +168,17 @@ Import a certificate. If a file name is given it will be read from the file, oth
 .RE
 
 .RS
-.B \-a
-.br
 .B \-\-auto-renew
 .RS
 Certificates marked as auto renewable will be renewed.
 .RE
 
-.B \-c \c
-.I csr_file
-.br
 .B \-\-csr=\c
 .I csr_file
 .RS
 Certificate signing request used for certificate.
 .RE
 
-.B \-d \c
-.I delta_period
-.br
 .B \-\-delta=\c
 .I delta_period
 .RS
@@ -223,9 +187,6 @@ For auto renewable certificates the auto renew process starts if the time til ex
 days.
 .RE
 
-.B \-p \c
-.I period
-.br
 .B \-\-period=\c
 .I period
 .RS
@@ -234,11 +195,6 @@ Certificates marked as auto renewable will be renewed for
 day instead of the default validity period defined in the configuration file.
 .RE
 
-.B \-r \c
-.I reason\c
-,\c
-.I time
-.br
 .B \-\-revoked=\c
 .I reason\c
 ,\c
@@ -277,12 +233,10 @@ is the UNIX epoch of the revocation or the ASN1 GERNERALIZEDTIME string in the f
 
 .BR list
 .RS
- List serial numbers of certificates. The list will be written to standard output if the option -o is not used.
+ List serial numbers of certificates. The list will be written to standard output if the option --output is not used.
 .RE
 
 .RS
-.B \-e \c
-.br
 .B \-\-expired\c
 .RS
 List serial numbers of expired certificates.
@@ -290,17 +244,6 @@ List serial numbers of expired certificates.
 .RE
 
 .RS
-.B \-h \c
-.br
-.B \-\-hex\c
-.RS
-Print serial number as hexadecimal number.
-.RE
-.RE
-
-.RS
-.B \-i \c
-.br
 .B \-\-invalid\c
 .RS
 List serial numbers of invalid certificates. Certificates are considered invalid if their notBefore time is in the future.
@@ -308,9 +251,6 @@ List serial numbers of invalid certificates. Certificates are considered invalid
 .RE
 
 .RS
-.B \-o \c
-.I outputfile
-.br
 .B \-\-output=\c
 .I outputfile
 .RS
@@ -321,16 +261,12 @@ instead of standard output
 .RE
 
 .RS
-.B \-r \c
-.br
 .B \-\-revoked\c
 .RS
 List serial numbers of revoked certificates.
 .RE
 .RE
 .RS
-.B \-t \c
-.br
 .B \-\-temporary\c
 .RS
 List certificates marked as temporary. Temporary certificates are dummy settings used to lock serial numbers during signing of a certificate signing request.
@@ -338,8 +274,6 @@ List certificates marked as temporary. Temporary certificates are dummy settings
 .RE
 
 .RS
-.B \-v \c
-.br
 .B \-\-valid\c
 .RS
 List serial numbers of valid certificates. A certificates is considered valid if it is not temporary, not revoked and the validity period (notBefore .. notAfter) has started and the certificate is not expired.
@@ -348,13 +282,10 @@ List serial numbers of valid certificates. A certificates is considered valid if
 
 .BR renew
 .RS
-Renew a certificate. The serial number of the certificate must be given. If not given it will be read from the standard input. The new certificate will be written to standard output or to a file if the -o option is used.
+Renew a certificate. The serial number of the certificate must be given. If not given it will be read from the standard input. The new certificate will be written to standard output or to a file if the --output option is used.
 .RE
 
 .RS
-.B \-o \c
-.I outputfile
-.br
 .B \-\-output=\c
 .I outputfile
 .RS
@@ -365,9 +296,6 @@ instead of standard output
 .RE
 
 .RS
-.B \-p \c
-.I period
-.br
 .B \-\-period=\c
 .I period
 .RS
@@ -390,8 +318,6 @@ Revoke a certificate. Serial number of the certificate to revoke must be used. I
 .RE
 
 .RS
-.B \-f
-.br
 .B \-\-force
 .RS
 Revoke certificate by it's serial number event it is not present in the database. A dummy entry will be inserted in the database and marked as revoked.
@@ -399,9 +325,6 @@ Revoke certificate by it's serial number event it is not present in the database
 .RE
 
 .RS
-.B \-r \c
-.I reason
-.br
 .B \-\-reason=\c
 .I reason
 .RS
@@ -438,9 +361,6 @@ is used.
 .RE
 
 .RS
-.B \-R \c
-.I revdate
-.br
 .B \-\-revocation-date=\c
 .I revdate
 .RS
@@ -464,8 +384,6 @@ Modify meta data of a certificate identified by the serial number.  The serial n
 .RE
 
 .RS
-.B \-A \c
-.br
 .B \-\-auto-renew\c
 .RS
 Mark a certificate as auto renewable.
@@ -474,9 +392,6 @@ Mark a certificate as auto renewable.
 
 
 .RS
-.B \-P \c
-.I period
-.br
 .B \-\-auto-renew-start-period=\c
 .I period
 .RS
@@ -490,9 +405,6 @@ command will renew the certificate.
 
 
 .RS
-.B \-V \c
-.I period
-.br
 .B \-\-auto-renew-validity-period=\c
 .I period
 .RS
@@ -504,8 +416,6 @@ days. If not specified the setting from the configuration file will be used.
 
 
 .RS
-.B \-a \c
-.br
 .B \-\-no-auto-renew\c
 .RS
 Remove auto renewable flag from certificate meta data.
@@ -513,9 +423,6 @@ Remove auto renewable flag from certificate meta data.
 .RE
 
 .RS
-.B \-c \c
-.I signing_request
-.br
 .B \-\-csr=\c
 .I signing_request
 .RS
@@ -531,14 +438,11 @@ Set certificate signing request.
 .RS
 Shows information of a certificate identified by the serial number.  The serial number of the certificate must be given on the command line or will be read from the standard input.
  The certificate information will be written to standard output or to a file if the
-.B -o
+.B --option
 option is used.
 .RE
 
 .RS
-.B \-o \c
-.I outputfile
-.br
 .B \-\-output=\c
 .I outputfile
 .RS
@@ -553,13 +457,10 @@ instead of standard output.
 
 .BR sign
 .RS
-Sign a certificate signing request. If a file name is given it will be read, otherwise it will be read from standard input, output will be written to standard output or to a file if -o option is used.
+Sign a certificate signing request. If a file name is given it will be read, otherwise it will be read from standard input, output will be written to standard output or to a file if --output option is used.
 .RE
 
 .RS
-.B \-E \c
-.I extdata
-.br
 .B \-\-extension=\c
 .I extdata
 .RS
@@ -574,29 +475,19 @@ is a comma separated list of:
 .I critical \c
 - Critical flag. 0: False, 1: True
 .br
-.I subject \c
-- Subject, is usually empty
-.br
-.I issuer \c
-- Issuer, is usually empty
-.br
 .I data \c
-- data of the extension
+- (base 64 encoded) data of the extension
 .br
 .RE
 .RE
 .RE
 
 .RS
-.B \-K \c
-.I [critical:]:flags
-.br
 .B \-\-extended-keyusage=\c
-.I [critical:]:flags
+.I flags
 .RS
-Comma separated list of extended key usage bits. Prefix 
-.I critical: 
-can be used to set the critical flag. Additionally dotted numeric OID are allowed too, e.g. 1.2.3.4.5. Known extended key usage bits are defined in RFC 5280:
+Comma separated list of extended key usage bits.
+Additionally dotted numeric OID are allowed too, e.g. 1.2.3.4.5. Known extended key usage bits are defined in RFC 5280:
 .RS
 
 .I serverAuth
@@ -617,8 +508,6 @@ can be used to set the critical flag. Additionally dotted numeric OID are allowe
 .br
 .I msSGC
 .br
-.I msEFS
-.br
 .I nsSGC
 .br
 .RE
@@ -626,21 +515,29 @@ can be used to set the critical flag. Additionally dotted numeric OID are allowe
 .RE
 
 .RS
-.B \-S \c
-.I alternatename
-.br
 .B \-\-san=\c
 .I alternatename
 .RS
-subjectAltName extension. Prefix
-.I critical:
-can be used to set the critical flag on the alternate name list (default: False).
+subjectAltName extension. Format of <san> is <type>:<value>. Supported <type> values are:
+.RS
+
+.I DNS\c
+- DNS domain name
+.br
+.I email\c
+- email address
+.br
+.I IP\c
+- IP address (IPv4 and IPv6)
+.br
+.I URI\c
+- URI
+.br
+.RE
 .RE
 .RE
 
 .RS
-.B \-a \c
-.br
 .B \-\-auto-renew\c
 .RS
 Mark certificate as auto renewable. The
@@ -652,31 +549,32 @@ option) will take care of this.
 .RE
 
 .RS
-.B \-b \c
-.I [critical:]data
-.br
 .B \-\-basic-constraint=\c
-.I [critical:]data
+.I data
 .RS
-Set basic constraints for the new certificate. Prefix
-.I critical:
-can be used to set the critical flag on the basic constraints.
-.RE
-.RE
-
-
-.RS
-.B \-k \c
-.I [critical:]flags
+Set basic constraints for the new certificate. Only CA and pathlen are supported (see RFC 5280, Section 4.2.1.9)
 .br
-.B \-\-keyusage=\c
-.I [critical:]flags
-.RS
-Comma separated list of keyUsage bits. Prefix
-.I critical:
-can be used to set the critical flag. Known keyUsage bits according to RFC 5280 are:
-.RS
+flags on the basic constraints, e.g. -b CA:TRUE,pathlen:1 for a CA certificate with a maximal path length of 1.
+.br
+.B Note:
+In accordance with RFC 5280 
+.I pathlen
+constraint can only be set if CA constraint is set and keyusage includes
+.I keyCertSign
+.
+.RE
+.RE
 
+
+.RS
+.B \-\-keyusage=\c
+.I flags
+.RS
+Comma separated list of keyUsage bits. As defined in RFC 5280, Section 4.2.1.3 the critical flag is always true.
+.br
+Known keyUsage bits according to RFC 5280 are:
+.RS
+.br
 .I digitalSignature
 .br
 .I nonRepudiation
@@ -684,7 +582,7 @@ can be used to set the critical flag. Known keyUsage bits according to RFC 5280 
 .I contentCommitment
 )
 .br
-.I keyEncipherment,
+.I keyEncipherment
 .br
 .I dataEncipherment
 .br
@@ -699,14 +597,11 @@ can be used to set the critical flag. Known keyUsage bits according to RFC 5280 
 .I decipherOnly
 .br
 .RE
-
-(see RFC 5280, Section 4.2.1.3 "Key Usage" for further details).
+(see RFC 5280, Section 4.2.1.3 "Key Usage" for futher details).
 .RE
 .RE
 
 .RS
-.B \-n \c
-.br
 .B \-\-no\-register \c
 .RS
 Don't store certificate data - except the serial number - in the database.
@@ -718,9 +613,6 @@ generated using "increment" strategy).
 .RE
 
 .RS
-.B \-o \c
-.I outputfile
-.br
 .B \-\-output=\c
 .I outputfile
 .RS
@@ -731,9 +623,6 @@ instead of standard output
 .RE
 
 .RS
-.B \-s \c
-.I startin
-.br
 .B \-\-start-in=\c
 .I startin
 .RS
@@ -744,9 +633,6 @@ days. Default: now
 .RE
 
 .RS
-.B \-t \c
-.I templatefile
-.br
 .B \-\-template=\c
 .I templatefile
 .RS
@@ -755,9 +641,6 @@ Use a template file for certificate signing.
 .RE
 
 .RS
-.B \-v \c
-.I validfor
-.br
 .B \-\-valid-for=\c
 .I validfor
 .RS
@@ -945,7 +828,7 @@ The default is
 Environment variable:
 .I PKIDB_GLOBAL_CRL_PUBLIC_KEY
 (alternative:
-.I CRL_CERTIFICATE
+.I PKIDB_GLOBAL_CRL_CERTIFICATE
 )
 .br
 The absolute path to the public key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter
@@ -988,26 +871,6 @@ The number of days before the next CRL is due.
 Default is 
 .B 7\c
  days.
-.RE
-.RE
-
-.RS
-.I crl_digest
-.br
-.RS
-Environment variable:
-.I PKIDB_GLOBAL_CRL_DIGEST
-.br
-Message digest algorithm to sign the certificate revocation list. See 
-.IR dgst "(1)
-for a list of valid digest algorithm for the current OpenSSL version.
-.br
-The default digest is 
-.B md5\c
- .
-.br
-.I Note:
-Changing the message digest algorithm for CRL signing is only supported since version 0.15 of pyOpenSSL!
 .RE
 .RE
 
@@ -1209,6 +1072,43 @@ Path to the client certificate key file (PKCS#1 format) for client authenticatio
 .RE
 .RE
 
+.RS
+.I sslmode
+.RS
+Environment variable:
+.I PKIDB_MYSQL_SSLMODE
+.br
+SSL protection level.
+.br
+Valid values are:
+.RS
+.I disable
+.br
+.RS
+Don't use SSL at all.
+.RE
+
+.I require
+.br
+.RS
+Use SSL and check the server name in the certificate and the signing CA of the server certificate.
+.RE
+
+.I skip-verify
+.br
+.RS
+Use SSL but don't check the server certificate and the signing CA.
+.RE
+
+.I preferred
+.br
+.RS
+Use SSL if advertised by the server.
+.RE
+.RE
+
+.RE
+.RE
 .RE
 .RE
 
@@ -1301,24 +1201,12 @@ Environment variable:
 .br
 SSL protection level (see http://www.postgresql.org/docs/current/static/libpq-ssl.html).
 .br
-Valid values for PostgreSQL 8.4 or newer are:
+Valid values are:
 .RS
 .I disable
 .br
 .RS
 Don't use SSL at all.
-.RE
-
-.I allow
-.br
-.RS
-Don't use SSL except the server enforce it.
-.RE
-
-.I prefer
-.br
-.RS
-Don't use SSL except the server supports it.
 .RE
 
 .I require
@@ -1337,28 +1225,6 @@ Use SSL and check if the server certificate has been signed by the correct CA.
 .br
 .RS
 Use SSL and check the server name in the certificate and the signing CA of the server certificate.
-.RE
-.RE
-
-.B Note: \c
-PostgreSQL 8.3 or older only support:
-.RS
-.I allow
-.br
-.RS
-Try non-SSL connection, if this fails try to connect using SSL.
-.RE
-
-.I prefer
-.br
-.RS
-Try SSL connection, if this fails try to connect using without using SSL.
-.RE
-
-.I require
-.br
-.RS
-Only use SSL connection.
 .RE
 .RE
 
@@ -1547,9 +1413,6 @@ crl_passphrase = AssembleTheMinions!
 # number of days before the next crl is due
 crl_validity_period = 30
 
-# message digest to use for crl signing
-crl_digest = sha512
-
 [logging]
 # format:
 # <user_defined_string>=<level>,<destination>:<option>
@@ -1615,14 +1478,11 @@ digest=sha512
 ; subject - optional subject for certificate extension
 ; issuer - optional issuer for certificate extension
 [extension:keyUsage]
-critical=True
 data=digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment
 
 ; [extension:1.2.3.4.5.6]
 ; critcal = False
 ; data:base64=SXQncyBzbyBmbHVmZnksIEknbSBnb25uYSBESUUh
-; subject=<subject>
-; issuer=<issuer>
 .fi
 .RE
 
@@ -1630,5 +1490,5 @@ data=digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment
 I'm sure!
 
 .SH AUTHOR
-Andreas Maus <python-pkidb@ypbind.de>
+Andreas Maus <pkidb@ypbind.de>
 .SH SEE ALSO

@@ -25,6 +25,8 @@ func setConfigurationMySQL(cfg *PKIConfiguration, key string, value string) erro
 		cfg.Database.SSLCert = value
 	case "sslkey":
 		cfg.Database.SSLKey = value
+	case "sslmode":
+		cfg.Database.SSLMode = value
 	case "user":
 		cfg.Database.User = value
 	default:

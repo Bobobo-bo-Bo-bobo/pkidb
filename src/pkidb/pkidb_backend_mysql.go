@@ -5,12 +5,14 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"io/ioutil"
 	"math/big"
 	"strings"
 	"time"
@@ -140,6 +142,53 @@ func (db PKIDBBackendMySQL) OpenDatabase(cfg *PKIConfiguration) (*sql.DB, error)
 		if db.Port != 0 {
 			dbcfg.Addr += fmt.Sprintf(":%d", db.Port)
 		}
+	}
+
+	if db.SSLMode != "" {
+		switch strings.ToLower(db.SSLMode) {
+		case "disable":
+			db.SSLMode = "false"
+			fallthrough
+		case "require":
+			db.SSLMode = "true"
+			fallthrough
+		case "skip-verify":
+			fallthrough
+		case "preferred":
+			fallthrough
+		default:
+			return nil, fmt.Errorf("%s: Invalid sslmode for database connection", GetFrame())
+		}
+	}
+	dbcfg.TLSConfig = strings.ToLower(db.SSLMode)
+
+	// for SSL  client certificate create a new TLSConfig
+	if db.SSLCert != "" && db.SSLKey != "" {
+		caPool := x509.NewCertPool()
+		if db.SSLCACert != "" {
+			caPEM, err := ioutil.ReadFile(db.SSLCACert)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %s", GetFrame(), err)
+			}
+			ok := caPool.AppendCertsFromPEM(caPEM)
+			if !ok {
+				return nil, fmt.Errorf("%s: %s", GetFrame(), "Unable to add CA certificate to CA pool")
+			}
+
+		}
+
+		clientSSL := make([]tls.Certificate, 0, 1)
+		clientCerts, err := tls.LoadX509KeyPair(db.SSLCert, db.SSLKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err)
+		}
+		clientSSL = append(clientSSL, clientCerts)
+
+		err = mysql.RegisterTLSConfig("pkidb-ssl-client-certificate", &tls.Config{
+			Certificates: clientSSL,
+			RootCAs:      caPool,
+		})
+		dbcfg.TLSConfig = "pkidb-ssl-client-certificate"
 	}
 
 	dsn := dbcfg.FormatDSN()
