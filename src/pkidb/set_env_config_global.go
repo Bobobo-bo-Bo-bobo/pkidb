@@ -72,6 +72,32 @@ func setConfigurationGlobal(cfg *PKIConfiguration, key string, value string) err
 			return fmt.Errorf("%s: Can't convert %s to a number: %s", GetFrame(), value, err.Error())
 		}
 		cfg.Global.ValidityPeriod = int64(v)
+	case "vault_insecure_ssl":
+		vis := strings.TrimSpace(strings.ToLower(value))
+		switch vis {
+		case "1":
+			fallthrough
+		case "true":
+			fallthrough
+		case "yes":
+			cfg.Global.VaultInsecureSSL = true
+		case "0":
+			fallthrough
+		case "false":
+			fallthrough
+		case "no":
+			cfg.Global.VaultInsecureSSL = false
+		default:
+			return fmt.Errorf("%s: Invalid value for PKIDB_GLOBAL_VAULT_INSECURE_SSL, use either 1/true/yes or 0/false/no", GetFrame())
+		}
+
+	case "vault_timeout":
+		v, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("%s: Can't convert %s to a number: %s", GetFrame(), value, err.Error())
+		}
+		cfg.Global.VaultTimeout = v
+
 	default:
 		return fmt.Errorf("%s: Invalid or unknown configuration %s", GetFrame(), value)
 	}

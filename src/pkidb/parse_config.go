@@ -27,7 +27,6 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	// TODO: Parse logging information
 	logging, err := cfg.GetSection("logging")
 	if err == nil {
 		keys := logging.KeyStrings()
@@ -68,6 +67,12 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 
 			config.Logging = append(config.Logging, l)
 		}
+	}
+
+	config.VaultToken = getVaultToken(&config)
+	err = VaultGet(&config)
+	if err != nil {
+		return nil, err
 	}
 
 	// [<database>]

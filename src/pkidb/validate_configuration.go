@@ -36,6 +36,10 @@ func ValidateConfiguration(cfg *PKIConfiguration) error {
 		return fmt.Errorf("%s: Private key for CRL signing must be encrypted", GetFrame())
 	}
 
+	if cfg.Global.VaultTimeout <= 0 {
+		return fmt.Errorf("%s: Vault connection timeout must be greater than 0", GetFrame())
+	}
+
 	if cfg.Database == nil {
 		return fmt.Errorf("%s: No database defined", GetFrame())
 	}

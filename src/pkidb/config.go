@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"database/sql"
 	"math/big"
+	"net/http"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type PKIConfiguration struct {
 	Database       *DatabaseConfiguration
 	DBBackend      PKIDBBackend
 	Logging        []LogConfiguration
+	VaultToken     string
 }
 
 // GlobalConfiguration - Global configration (section global from ini file)
@@ -40,6 +42,8 @@ type GlobalConfiguration struct {
 	Backend              string `ini:"backend"`
 	Sites                string `ini:"sites"`
 	DefaultSite          string `ini:"default_site"`
+	VaultInsecureSSL     bool   `ini:"vault_insecure_ssl"`
+	VaultTimeout         int    `ini:"vault_timeout"`
 }
 
 // DatabaseConfiguration - Database configuration
@@ -237,4 +241,32 @@ type TemplateExtension struct {
 	Critical   bool   `ini:"critical"`
 	Data       string `ini:"data"`
 	DataBase64 string `ini:"data:base64"`
+}
+
+// HTTPResult - Result of HTTP operation
+type HTTPResult struct {
+	Status     string
+	StatusCode int
+	Header     http.Header
+	Content    []byte
+}
+
+// VaultKVResult - Result from Vault GET request
+type VaultKVResult struct {
+	RequestID string    `json:"request_id"`
+	Data      VaultData `json:"data"`
+}
+
+// VaultData - payload from kv store
+type VaultData struct {
+	CaPublicKey        *string `json:"ca_public_key"`
+	CaPrivateKey       *string `json:"ca_private_key"`
+	CaPassphrase       *string `json:"ca_passphrase"`
+	CrlPublicKey       *string `json:"crl_public_key"`
+	CrlPrivateKey      *string `json:"crl_private_key"`
+	CrlPassphrase      *string `json:"crl_passphrase"`
+	DatabasePassphrase *string `json:"database_passphrase"`
+	DatabaseSSLCert    *string `json:"database_sslcert"`
+	DatabaseSSLKey     *string `json:"database_sslkey"`
+	DatabaseSSLCa      *string `json:"database_sslca"`
 }
