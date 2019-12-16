@@ -7,7 +7,7 @@ import (
 )
 
 const name = "pkidb"
-const version = "1.0.0"
+const version = "1.0.1-2019.12.16"
 
 // DummyCertificateSubject - subject for dummy entry
 const DummyCertificateSubject = "dummy entry"
