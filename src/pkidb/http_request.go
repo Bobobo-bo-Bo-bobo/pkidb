@@ -54,6 +54,7 @@ func httpRequest(config *PKIConfiguration, _url string, method string, header *m
 		return result, fmt.Errorf("%s: No token for Vault access", GetFrame())
 	}
 	request.Header.Set("X-Vault-Token", config.VaultToken)
+	request.Header.Set("X-Vault-Request", "true")
 
 	// close connection after response and prevent re-use of TCP connection because some implementations (e.g. HP iLO4)
 	// don't like connection reuse and respond with EoF for the next connections
