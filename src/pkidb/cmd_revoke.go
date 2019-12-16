@@ -63,6 +63,15 @@ func CmdRevoke(cfg *PKIConfiguration, args []string) error {
 			return fmt.Errorf("%s: Invalid serial number %s", GetFrame(), sn)
 		}
 
+		// check if certificate has already been revoked
+		info, err := cfg.DBBackend.GetCertificateInformation(cfg, serial)
+		if err != nil {
+			return err
+		}
+		if info.Revoked != nil {
+			return fmt.Errorf("%s: Certificate with serial number %s was already revoked", GetFrame(), sn)
+		}
+
 		rr := &RevokeRequest{
 			SerialNumber: serial,
 			Reason:       *reason,

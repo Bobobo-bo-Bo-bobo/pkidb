@@ -139,6 +139,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err != nil {
+		LogMessage(config, LogLevelCritical, err.Error())
+	}
+
 	err = config.DBBackend.CloseDatabase(config.Database.dbhandle)
 	if err != nil {
 		LogMessage(config, LogLevelCritical, err.Error())
