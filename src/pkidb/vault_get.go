@@ -1,210 +1,12 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"path/filepath"
 )
-
-// VaultGet - get data from Vault
-func VaultGet(cfg *PKIConfiguration) error {
-	// CA data
-	isv, u, err := isVaultURL(cfg.Global.CaPublicKey)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CaPublicKey != nil {
-			cfg.Global.CaPublicKey = *vres.Data.CaPublicKey
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Global.CaCertificate)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CaPublicKey != nil {
-			cfg.Global.CaCertificate = *vres.Data.CaPublicKey
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Global.CaPrivateKey)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CaPrivateKey != nil {
-			// PKCS8 is binary and MUST be base64 encoded - see: https://github.com/hashicorp/vault/issues/1423
-			decoded, err := base64.StdEncoding.DecodeString(*vres.Data.CaPrivateKey)
-			if err != nil {
-				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			cfg.Global.CaPrivateKey = string(decoded)
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Global.CaPassphrase)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CaPassphrase != nil {
-			cfg.Global.CaPassphrase = *vres.Data.CaPassphrase
-		}
-	}
-
-	// CRL data
-	isv, u, err = isVaultURL(cfg.Global.CrlPublicKey)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CrlPublicKey != nil {
-			cfg.Global.CrlPublicKey = *vres.Data.CrlPublicKey
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Global.CrlCertificate)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CrlPublicKey != nil {
-			cfg.Global.CrlCertificate = *vres.Data.CrlPublicKey
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Global.CrlPrivateKey)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CrlPrivateKey != nil {
-			// PKCS8 is binary and MUST be base64 encoded - see: https://github.com/hashicorp/vault/issues/1423
-			decoded, err := base64.StdEncoding.DecodeString(*vres.Data.CrlPrivateKey)
-			if err != nil {
-				return fmt.Errorf("%s: %s", GetFrame(), err.Error())
-			}
-			cfg.Global.CrlPrivateKey = string(decoded)
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Global.CrlPassphrase)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.CrlPassphrase != nil {
-			cfg.Global.CrlPassphrase = *vres.Data.CrlPassphrase
-		}
-	}
-
-	// Database data
-	isv, u, err = isVaultURL(cfg.Database.SSLCert)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.DatabaseSSLCert != nil {
-			cfg.Database.SSLCert = *vres.Data.DatabaseSSLCert
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Global.CrlCertificate)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.DatabaseSSLCert != nil {
-			cfg.Global.CrlCertificate = *vres.Data.DatabaseSSLCert
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Database.SSLKey)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.DatabaseSSLKey != nil {
-			cfg.Database.SSLKey = *vres.Data.DatabaseSSLKey
-		}
-	}
-
-	isv, u, err = isVaultURL(cfg.Database.SSLCACert)
-	if err != nil {
-		return err
-	}
-	if isv {
-		vres, err := getDataFromVault(cfg, u)
-		if err != nil {
-			return err
-		}
-
-		if vres.Data.DatabaseSSLCa != nil {
-			cfg.Database.SSLCACert = *vres.Data.DatabaseSSLCa
-		}
-	}
-	return nil
-}
 
 func getVaultToken(cfg *PKIConfiguration) string {
 	// try environment variable VAULT_TOKEN first
@@ -236,19 +38,30 @@ func getDataFromVault(cfg *PKIConfiguration, u string) (*VaultKVResult, error) {
 		return nil, err
 	}
 
-	if result.StatusCode != 200 {
-		return nil, fmt.Errorf("%s: Unexpected HTTP status, expected \"200 OK\" but got \"%s\" instead", GetFrame(), result.Status)
+	switch result.StatusCode {
+	case 200:
+		break
+	case 403:
+		return nil, fmt.Errorf("%s: Access denied (\"%s\") from Vault server. Are the token and/or the permissions to access %s valid?", GetFrame(), result.Status, u)
+	case 404:
+		return nil, fmt.Errorf("%s: Not found (\"%s\") from Vault server while accessing %s", GetFrame(), result.Status, u)
+	default:
+		return nil, fmt.Errorf("%s: Unexpected HTTP status, expected \"200 OK\" but got \"%s\" from %s instead", GetFrame(), u, result.Status)
 	}
 
 	err = json.Unmarshal(result.Content, &vkvrslt)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		return nil, fmt.Errorf("%s: %s (processing data from %s)", GetFrame(), err.Error(), u)
 	}
 
 	return &vkvrslt, nil
 }
 
 func isVaultURL(s string) (bool, string, error) {
+	if s == "" {
+		return false, "", nil
+	}
+
 	parsed, err := url.Parse(s)
 	if err != nil {
 		return false, "", fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -258,12 +71,12 @@ func isVaultURL(s string) (bool, string, error) {
 	case "http":
 		fallthrough
 	case "vault":
-		return true, fmt.Sprintf("http://%s/%s", parsed.Host, parsed.Path), nil
+		return true, fmt.Sprintf("http://%s/v1%s", parsed.Host, parsed.Path), nil
 
 	case "https":
 		fallthrough
 	case "vaults":
-		return true, fmt.Sprintf("https://%s/%s", parsed.Host, parsed.Path), nil
+		return true, fmt.Sprintf("https://%s/v1%s", parsed.Host, parsed.Path), nil
 
 	case "":
 		return false, parsed.Path, nil

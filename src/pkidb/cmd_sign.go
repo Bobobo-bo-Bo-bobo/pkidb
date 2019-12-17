@@ -32,7 +32,7 @@ func CmdSign(cfg *PKIConfiguration, args []string) error {
 	argParse.Usage = showHelpSign
 	argParse.Parse(args)
 
-	if cfg.Global.CaPublicKey == "" || cfg.Global.CaPrivateKey == "" {
+	if len(cfg.Global.caPublicKey) == 0 || len(cfg.Global.caPrivateKey) == 0 {
 		return fmt.Errorf("%s: Public and private key for signing CA must be defined", GetFrame())
 	}
 

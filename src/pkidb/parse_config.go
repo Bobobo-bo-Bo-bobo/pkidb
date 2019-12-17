@@ -70,11 +70,19 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 	}
 
 	config.VaultToken = getVaultToken(&config)
-	err = VaultGet(&config)
+	err = FetchDataCA(&config)
 	if err != nil {
-		return nil, err
+		return &config, err
+	}
+	err = FetchDataCRL(&config)
+	if err != nil {
+		return &config, err
 	}
 
+	err = LoadSSLKeyPairs(&config)
+	if err != nil {
+		return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
 	// [<database>]
 	switch config.Global.Backend {
 	case "mysql":
@@ -88,6 +96,12 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.Database = &dbconfig
+
+		err = FetchDataDatabase(&config)
+		if err != nil {
+			return &config, err
+		}
+
 		var mysql PKIDBBackendMySQL
 		err = mysql.Initialise(&config)
 		if err != nil {
@@ -105,6 +119,12 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.Database = &dbconfig
+
+		err = FetchDataDatabase(&config)
+		if err != nil {
+			return &config, err
+		}
+
 		var pgsql PKIDBBackendPgSQL
 		err = pgsql.Initialise(&config)
 		if err != nil {
@@ -122,6 +142,12 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 			return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
 		config.Database = &dbconfig
+
+		err = FetchDataDatabase(&config)
+		if err != nil {
+			return &config, err
+		}
+
 		var sql3 PKIDBBackendSQLite3
 		err = sql3.Initialise(&config)
 		if err != nil {
@@ -135,9 +161,5 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 		return &config, fmt.Errorf("%s: Unknown database backend found in configuration file", GetFrame())
 	}
 
-	err = LoadSSLKeyPairs(&config)
-	if err != nil {
-		return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
-	}
 	return &config, nil
 }
