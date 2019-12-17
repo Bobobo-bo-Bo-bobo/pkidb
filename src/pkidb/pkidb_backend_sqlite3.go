@@ -154,7 +154,7 @@ func (db PKIDBBackendSQLite3) StoreCertificateSigningRequest(cfg *PKIConfigurati
 	}
 	defer fetch.Close()
 
-	err = fetch.QueryRow(_hash).Scan(&_hash)
+	err = fetch.QueryRow(hash).Scan(&_hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			insert, err := tx.Prepare("INSERT INTO signing_request (hash, request) VALUES (?, ?);")

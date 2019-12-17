@@ -186,7 +186,7 @@ func (db PKIDBBackendPgSQL) StoreCertificateSigningRequest(cfg *PKIConfiguration
 
 	hash := fmt.Sprintf("%x", sha256.Sum256(csr.Raw))
 
-	err = tx.QueryRow("SELECT hash FROM signing_request WHERE hash=$1", _hash).Scan(&_hash)
+	err = tx.QueryRow("SELECT hash FROM signing_request WHERE hash=$1", hash).Scan(&_hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			_, err = tx.Exec("INSERT INTO signing_request (hash, request) VALUES ($1, $2);", hash, base64.StdEncoding.EncodeToString(csr.Raw))
