@@ -23,7 +23,7 @@ func FillConfigurationDefaults(cfg *PKIConfiguration) {
 	}
 
 	if cfg.Global.VaultTimeout == 0 {
-		cfg.Global.VaultTimeout = 10
+		cfg.Global.VaultTimeout = 5
 	}
 
 	if cfg.Database != nil {

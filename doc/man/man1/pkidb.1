@@ -1,4 +1,4 @@
-.TH pkdib 1 "December 13th, 2019" "Version 1.0.0"
+.TH pkdib 1 "December 13th, 2019" "Version 1.1.0"
 .SH NAME
 pkidb - PKI system based on a SQL database back end
 
@@ -715,14 +715,18 @@ Which database back end to use. Possible options are:
 .I ca_certificate
 )
 .br
+.RS
 Environment variable:
 .I PKIDB_GLOBAL_CA_PUBLIC_KEY
 (alternative:
 .I PKIDB_GLOBAL_CA_CERTIFICATE
 )
 .br
+.RE
 .RS
-Absolute path to the public key of the CA certificate.
+Absolute path to the public key of the CA certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below).
 .RE
 .RE
 
@@ -733,7 +737,9 @@ Absolute path to the public key of the CA certificate.
 Environment variable:
 .I PKIDB_GLOBAL_CA_PRIVATE_KEY
 .br
-Absolute path to the private key of the CA certificate.
+Absolute path to the private key of the CA certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below).
 .RE
 .RE
 
@@ -744,7 +750,9 @@ Absolute path to the private key of the CA certificate.
 Environment variable:
 .I PKIDB_GLOBAL_CA_PASSPHRASE
 .br
-The passphrase to decrypt the private key of the CA certificate.
+The passphrase to decrypt the private key of the CA certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) to the secure storage of the passphrase.
 .RE
 .RE
 
@@ -831,7 +839,11 @@ Environment variable:
 .I PKIDB_GLOBAL_CRL_CERTIFICATE
 )
 .br
-The absolute path to the public key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter
+The absolute path to the public key or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) for the certificate to sign the certificate revocation list.
+.br
+This can be the same as the CA certificate but best practices recommend a separate certificate with a shorter
 validity period.
 .RE
 .RE
@@ -843,7 +855,11 @@ validity period.
 Environment variable:
 .I PKIDB_GLOBAL_CRL_PRIVATE_KEY
 .br
-The absolute path to the private key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter
+The absolute path to the private key or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) for the certificate to sign the certificate revocation list.
+.br
+This can be the same as the CA certificate but best practices recommend a separate certificate with a shorter
 validity period.
 .RE
 .RE
@@ -855,7 +871,9 @@ validity period.
 Environment variable:
 .I PKIDB_GLOBAL_CRL_PASSPHRASE
 .br
-The passphrase to decrypt the private key of the certificate used to sign the revocation list.
+The passphrase to decrypt the private key of the certificate used to sign the revocation list or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) to the secure storage of the passphrase.
 .RE
 .RE
 
@@ -1035,7 +1053,9 @@ Environment variable:
 .br
 The password for the 
 .I user
-of the database connection.
+of the database connection or Vault path to the secure storage of the passphrase (see 
+.B HASHICORP VAULT SUPPORT
+below).
 .RE
 .RE
 
@@ -1187,7 +1207,9 @@ The user name for the database connection.
 Environment variable:
 .I PKIDB_PGSQL_PASSPHRASE
 .br
-The password for the 
+The password  or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) for the 
 .I user
 of the database connection.
 .RE
@@ -1239,9 +1261,6 @@ Environment variable:
 .I PKIDB_PGSQL_SSLCACERT
 .br
 Path to the CA public key file (PEM format).
-.br
-.B Note: \c
-This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
 .RE
 .RE
 
@@ -1252,10 +1271,6 @@ This requires PostgreSQL 8.4 or newer, as the client library doesn't support thi
 Environment variable:
 .I PKIDB_PGSQL_SSLCERT
 .br
-Path to the client certificate (PEM format) for client authentication with SSL certificate.
-.br
-.B Note: \c
-This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
 .RE
 .RE
 
@@ -1267,9 +1282,6 @@ Environment variable:
 .I PKIDB_PGSQL_SSLKEY
 .br
 Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate.
-.br
-.B Note: \c
-This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
 .RE
 .RE
 
