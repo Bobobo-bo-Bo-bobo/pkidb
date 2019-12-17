@@ -71,11 +71,17 @@ func isVaultURL(s string) (bool, string, error) {
 	case "http":
 		fallthrough
 	case "vault":
+		if parsed.Path[len(parsed.Path)-1] == '/' {
+			return false, "", fmt.Errorf("%s: Invalid vault location. Location can't end with /", GetFrame())
+		}
 		return true, fmt.Sprintf("http://%s/v1%s", parsed.Host, parsed.Path), nil
 
 	case "https":
 		fallthrough
 	case "vaults":
+		if parsed.Path[len(parsed.Path)-1] == '/' {
+			return false, "", fmt.Errorf("%s: Invalid vault location. Location can't end with /", GetFrame())
+		}
 		return true, fmt.Sprintf("https://%s/v1%s", parsed.Host, parsed.Path), nil
 
 	case "":
