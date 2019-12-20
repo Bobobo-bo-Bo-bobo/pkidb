@@ -974,7 +974,8 @@ func (db PKIDBBackendSQLite3) GetSignatureAlgorithmName(cfg *PKIConfiguration, i
 }
 
 // SearchSubject - search subject
-func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string) (*big.Int, error) {
+func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string) ([]*big.Int, error) {
+	var result = make([]*big.Int, 0)
 	var sn string
 
 	tx, err := cfg.Database.dbhandle.Begin()
@@ -991,24 +992,36 @@ func (db PKIDBBackendSQLite3) SearchSubject(cfg *PKIConfiguration, search string
 	}
 	defer query.Close()
 
-	err = query.QueryRow(strings.ToLower(search)).Scan(&sn)
+	srows, err := query.Query(strings.ToLower(search))
 	if err != nil {
-		if err == sql.ErrNoRows {
-			tx.Commit()
-			return nil, nil
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+	}
+	defer srows.Close()
+
+	for srows.Next() {
+		err = srows.Scan(&sn)
+		if err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 		}
+
+		serial := big.NewInt(0)
+		serial, ok := serial.SetString(sn, 10)
+		if !ok {
+			return nil, fmt.Errorf("%s: Can't convert serial number %s to big integer", GetFrame(), sn)
+		}
+
+		result = append(result, serial)
+	}
+	err = srows.Err()
+	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 	tx.Commit()
 
-	serial := big.NewInt(0)
-	serial, ok := serial.SetString(sn, 10)
-	if !ok {
-		return nil, fmt.Errorf("%s: Can't convert serial number %s to big integer", GetFrame(), sn)
-	}
-
-	return serial, nil
+	return result, nil
 }
 
 // RestoreFromJSON - Restore from JSON

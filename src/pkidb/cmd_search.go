@@ -44,20 +44,24 @@ func CmdSearch(cfg *PKIConfiguration, args []string) error {
 	}
 
 	for _, srch := range srchList {
-		serial, err := cfg.DBBackend.SearchSubject(cfg, srch)
+		sl, err := cfg.DBBackend.SearchSubject(cfg, srch)
 		if err != nil {
 			return err
 		}
 
-		if serial != nil {
-			if cfg.Global.ListAsHex {
-				out += fmt.Sprintf("0x%s\n", serial.Text(16))
-			} else {
-				out += fmt.Sprintf("%s\n", serial.Text(10))
+		if sl != nil {
+			for _, serial := range sl {
+				if serial != nil {
+					if cfg.Global.ListAsHex {
+						out += fmt.Sprintf("0x%s\n", serial.Text(16))
+					} else {
+						out += fmt.Sprintf("%s\n", serial.Text(10))
+					}
+					LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s found from search request %s", serial.Text(10), srch))
+				}
 			}
 		}
 
-		LogMessage(cfg, LogLevelInfo, fmt.Sprintf("Certificate with serial number %s found from search request %s", serial.Text(10), srch))
 	}
 
 	if *output == "" {

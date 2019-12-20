@@ -29,7 +29,7 @@ type PKIDBBackend interface {
 	GetSignatureAlgorithmName(*PKIConfiguration, int) (string, error)
 	GetCertificateSigningRequest(*PKIConfiguration, string) (string, error)
 	GetX509Extension(*PKIConfiguration, string) (X509ExtensionData, error)
-	SearchSubject(*PKIConfiguration, string) (*big.Int, error)
+	SearchSubject(*PKIConfiguration, string) ([]*big.Int, error)
 	RestoreFromJSON(*PKIConfiguration, *JSONInOutput) error
 	BackupToJSON(*PKIConfiguration) (*JSONInOutput, error)
 	GetSerialNumbersByState(*PKIConfiguration, int) ([]*big.Int, error)
