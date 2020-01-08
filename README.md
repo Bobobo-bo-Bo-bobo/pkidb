@@ -1,5 +1,7 @@
 [TOC]
+
 ----
+
 ## Formats
 ### Serial number formats
 
@@ -70,7 +72,7 @@ To verify the integrity the `healthcheck` command is used. It will compare the i
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
-| `--fix` | - | - | Stored data will be replaced with data from the certifiate stored in the database. |
+| `--fix` | - | - | Stored data will be replaced with data from the certifiate stored in the database |
 
 ### General "housekeeping" - `housekeeping`
 The `housekeeping` command should be run at regular intervals. It will check all certificates in the database for expiration and renew auto renewable certificates (if the option `--auto-renew` is used).
@@ -90,9 +92,9 @@ To import a certificate the import command is used. If a file name is given it w
 | `-–auto-renew` | - | - | Mark certificate as auto renewable |
 | `-–csr` | Certificate signing request in PEM format | - | Certificate signing request used for certificate creation |
 | `-–delta` | Days before expiration to start auto renew process | - | For auto renewable certificates the auto renew process starts if the time til expiration is less than the given number of days |
-| `-–period` | New validity period in days for auto renewed certificate | Value of validity_period in the configuration file | New validity period for auto renewed certificate |
+| `-–period` | New validity period in days for auto renewed certificate | Value of `validity_period` in the configuration file | New validity period for auto renewed certificate |
 | `-–revoked` | `reason,time` | - | Import certificate and mark it as revoked. `reason` is the revocation reason and can be one of |
-| | | | `unspecified`, `keyCompromise`, `CACompromise`, `affiliationChanged`, `superseded`, `cessationOfOperation`, `certificateHold`, `privilegeWithdrawn`, `removeFromCRL`, `aACompromise` (see [RFC 5280, Section 5.3.1. Reason Code](https://tools.ietf.org/html/rfc5280#section-5.3.1). |
+| | | | `unspecified`, `keyCompromise`, `CACompromise`, `affiliationChanged`, `superseded`, `cessationOfOperation`, `certificateHold`, `privilegeWithdrawn`, `removeFromCRL`, `aACompromise` (see [RFC 5280, Section 5.3.1. Reason Code](https://tools.ietf.org/html/rfc5280#section-5.3.1) |
 | | | |`time` is the time of the revocation |
 
 ### List certificates - `list`
@@ -128,7 +130,7 @@ By using the `revoke` command a certificate, identified by its serial number, ca
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
 | `-–force` | - | - | Revoke certificate even it is not present in the database. A dummy entry will be inserted in the database and marked as revoked |
-| `-–reason` | revocation reason | `unspecified` | Set revocation reason for certificate. |
+| `-–reason` | revocation reason | `unspecified` | Set revocation reason for certificate |
 | | | | The revocation reason is specified in [RFC 5280, Section 5.3.1 Reason Code](https://tools.ietf.org/html/rfc5280#section-5.3.1) and can be one of |
 | | | | `unspecified`, `keyCompromise`, `CACompromise`, `affiliationChanged`, `superseded`, `cessationOfOperation`, `certificateHold`, `privilegeWithdrawn`, `removeFromCRL`, `aACompromise` |
 | `-–revocation-date` | revocation date for certificate | current date and time | Revocation date must be an ASN1 GERNERALIZEDTIME string in the format `YYYYMMDDhhmmssZ`. If not given, the current date will be used |
@@ -169,12 +171,12 @@ The `sign` command is used to sign a certificate signing request. If the file na
 |  |  |  | `subject` - Subject (usually empty) |
 |  |  |  | `issuer` - Issuer (usually empty) |
 |  |  |  | `data` - data of the extension |
-| `-–extended-keyusage` | `flags` | - | Comma separated list of extended key usage bits. Additionally dotted numeric OID are allowed too, e.g. `1.2.3.4.5`. |
+| `-–extended-keyusage` | `flags` | - | Comma separated list of extended key usage bits. Additionally dotted numeric OID are allowed too, e.g. `1.2.3.4.5` |
 |  |  |  | Known extended key usage bits are defined in RFC 5280 as `serverAuth`, `clientAuth`, `codeSigning`, `emailProtection`, `timeStamping`, `msCodeInd`, `msCodeCom`, `msCTLSign`, `msSGC`,`nsSGC`, `any` |
 | `-–san` | `alternatename` | - | `subjectAltName` extension |
 | `-–auto-renew` | - | - | Mark certificate as auto renewable. The `housekeeping` command (with the `--auto-renew` option) will take care of this |
 | `-–basic-constraint` | `data` | - | Set basic constraints for the new certificate |
-| `-–keyusage` | `flags` | - | Comma separated list of keyUsage bits. |
+| `-–keyusage` | `flags` | - | Comma separated list of keyUsage bits |
 |  |  |  | Known `keyUsage` bits according RFC 5280 to are: `digitalSignature`, `nonRepudiation` (or `contentCommitment`), `keyEncipherment`, `dataEncipherment`, `keyAgreement`, `keyCertSign`, `cRLSign`, `encipherOnly`, `decipherOnly` |
 | `-–output` | Output file | - | Write serial numbers of listed certificate to a file instead to standard output |
 | `-–start-in` | `startin` | current date and time | Validity of the new certificate starts in startin days |
@@ -201,6 +203,161 @@ Hence the option to set the criticality flag of the keyusage flags has been remo
 ### Statistics - `statistics`
 The `statistics` command will print a small summary of stored certificates to standard output.
 ***Note:*** Only the keysizes and hashing algorithm of valid certificates are shown.
+
+---
+
+## Configuration
+The configuration file is structured like a INI file. It contains at least two sections. The global section and a backend specific section based on the backend selected in the global section.
+As it will contain sensitive informations, if not stored in [Hashicorp Vault](https://www.vaultproject.io/), like the path and the password for the private key of your certificate authority, access to this configuration file should be restricted!
+
+### Hashicorp Vault support
+Starting with version 1.1.0 CA/CRL certificates, private keys, passphrases and database passwords can be stored in Hashicorp Vault storage.
+
+It is the responsibility of the caller to provide a valid Vault token. The Vault token will be obtained (in this order) from:
+
+   * enviroment variable `VAULT_TOKEN`
+   * read from file `${HOME}/.vault_token` (`vault login` / `vault token renew` will store the current token in this file)
+
+Only the [Key / Value Secrets Engine](https://www.vaultproject.io/docs/secrets/kv/index.html) is supported.
+
+Vault URL can be provided as `scheme://vault.server:vault_port/path/to/kv/location`. Supported `scheme` values are:
+
+| Scheme | Description |
+|:-------|:------------|
+| `vault` | Use unencrypted HTTP access |
+| `http` | ***Should never be used in productive environment*** |
+| `vaults` | Use HTTPS access |
+| `https` | If `vault_insecure_ssl` is set to `false` (the default) the SSL certificate will be validated |
+|         | and the signing CA of the server certificate must be present in the trusted certificate store |
+|         | of the operating system |
+
+The name of the keys are hard coded as:
+
+| Key | Description |
+|:----|:------------|
+| `ca_public_key` | Public key of the CA certificate |
+| `ca_private_key` | Base64 encoded encrypted private key of the CA certificate in PKCS8 format |
+| `ca_passphrase` | Passphrase of the encrypte CA private key |
+| `crl_public_key` | Public key of the CRL certificate |
+| `crl_private_key` | Base64 encoded encrypted private key of the CRL certificate in PKCS8 format |
+| `crl_passphrase` | Passphrase of the encrypte CRL private key |
+| `database_passphrase` | Passphrase for database access |
+
+### Configuration file
+#### Global section
+The `global` section contains general configuration settings. Depending on the purpose, not all of the options must be set. (For instance a configuration for a dedicated system to generate the revocation list doesn't need the CA key settings.)
+
+| Configuration variable | Description |
+|:-----------------------|:------------|
+| `backend`	| Database backend to use. Possible options are |
+|   | `mysql` - MySQL, requires the MySQLdb Python module |
+|   | `pgsql` - PostgreSQL, requires the psycopg2 Python module |
+|   | `sqlite3` - SQLite3 |
+| `ca_public_key` | Absolute path or Vault URL to the public key of the CA certificate |
+| `ca_private_key` | Absoulte path or Vault URL to the private key of the CA certificate |
+| `ca_passphrase` | The passphrase or Vault URL to decrypt the private key of the CA certificate |
+| `digest` | Default message digest to use for certificate signing. See dgst(1) for a complete list of supported message digest algorithm of the current OpenSSL installation |
+| `serial_number` | Method to generate new serial numbers, possible options are: |
+|   | `random `- Use random serial numbers |
+|   | `increment` - Increment the last serial number |
+|   | *Default:* `random` |
+| `validity_period` | The number of days to make a certificate valid |
+| `auto_renew_start_period` | For auto renewable certificates, the auto renewable will be run if less then `auto_renew_start_period` days are left til expiration |
+| `crl_public_key` | The absolute path or Vault URL to the public key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter validity period |
+| `crl_private_key` | The absolute path or Vault URL to the private key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter validity period |
+| `crl_passphrase` | The passphrase or Vault URL to decrypt the private key of the certificate used to sign the revocation list|
+| `crl_validity_period` | The number of days before the next CRL is due |
+| `vault_insecure_ssl` | Don't validate SSL certificate of the Vault server |
+|   | *Default:* `false`
+| `vault_timeout` | Timeout in seconds for Vault requests |
+|   |  *Default:* 5 |
+
+#### Logging section
+The logging section is optional and contains options for logging. A unique user defined string can be used for each logname.
+The format should be all lowercase letters and numbers and underscores (`_`). If no logging section has been given (or it is empty) the default will be used (Destination: `syslog`, Facility: `user`).
+
+#### MySQL configuration
+The `mysql` section contains configuration settings for the MySQL backend. At least `host`, `database`, `user` and `password` must be set.
+
+| Configuration variable | Description |
+|:-----------------------|:------------|
+| `host` | The hostname or IP address to connect to |
+| `port` | The port mysqld is running on (*Default:* 3306) |
+| `database` | Name of the database to connect to |
+| `user` | The user name for the database connection |
+| `passphrase` | The password or Vault URL for the user of the database connection |
+| `sslcacert` | Path to the CA public key file (PEM format) |
+| `sslcert` | Path to the client certificate (PEM format) for client authentication with SSL certificate |
+| `sslkey` | Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate |
+
+#### PostgreSQL configuration
+The `pgsql` section contains configuration settings for the PostgreSQL backend. At least `host`, `database`, `user` and `password` must be set.
+
+| Configuration variable | Description
+| `host` 	The hostname or IP address to connect to |
+| `port` 	The port postgres is running on (usually 5432) |
+| `database` 	Name of the database to connect to |
+| `user` 	The user name for the database connection |
+| `passphrase` 	The password or Vault URL for the user of the database connection |
+| `sslmode` 	SSL protection level 3). Valid values are:
+|   | `disable` - Don't use SSL at all |
+|   | `require` - Use SSL but don't check the server certificate |
+|   | `verify-ca` - Use SSL and check if the server certificate has been signed by the correct CA |
+|   | `verify-full` - Use SSL and check the server name in the certificate and the signing CA of the server certificate |
+| `sslcacert` 	Path to the CA public key file (PEM format) |
+| `sslcert` 	Path to the client certificate (PEM format) for client authentication with SSL certificate |
+| `sslkey` 	Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate |
+
+#### SQLite3 configuration
+The `sqlite3` section contains configuration settings for the SQLite3 backend. The `database` options is mandatory.
+
+| Configuration variable | Description |
+|:-----------------------|:------------|
+| `database`| The absolute path to the SQLite3 database file |
+
+### Environment variables
+In addition to the configuration file environment variables can be used. Configuration variables from environment variables replace values from configuration file.
+
+| Environment variable | Configuration file section | Configuration file variable |
+|:---------------------|:---------------------------|:----------------------------|
+| `PKIDB_GLOBAL_AUTO_RENEW_START_PERIOD` | `global` | `auto_renew_start_period` |
+| `PKIDB_GLOBAL_BACKEND` | `global` | `backend` |
+| `PKIDB_GLOBAL_CA_CERTIFICATE` | `global` | `ca_certificate` |
+| `PKIDB_GLOBAL_CA_PASSPHRASE` | `global` | `ca_passphrase` |
+| `PKIDB_GLOBAL_CA_PRIVATE_KEY` | `global` | `ca_private_key` |
+| `PKIDB_GLOBAL_CA_PUBLIC_KEY` | `global` | `ca_public_key` |
+| `PKIDB_GLOBAL_CRL_CERTIFICATE` | `global` | `crl_certificate` |
+| `PKIDB_GLOBAL_CRL_PASSPHRASE` | `global` | `crl_passphrase` |
+| `PKIDB_GLOBAL_CRL_PRIVATE_KEY` | `global` | `crl_private_key` |
+| `PKIDB_GLOBAL_CRL_PUBLIC_KEY` | `global` | `crl_public_key` |
+| `PKIDB_GLOBAL_CRL_VALIDITY_PERIOD` | `global` | `crl_validity_period` |
+| `PKIDB_GLOBAL_DEFAULT_SITE` | `global` | `default_site` |
+| `PKIDB_GLOBAL_DIGEST` | `global` | `digest` |
+| `PKIDB_GLOBAL_LIST_AS_HEX` | `global` | `list_as_hex` |
+| `PKIDB_GLOBAL_SERIAL_NUMBER` | `global` | `serial_number` |
+| `PKIDB_GLOBAL_SITES` | `global` | `sites` |
+| `PKIDB_GLOBAL_VALIDITY_PERIOD` | `global` | `validity_period` |
+| `PKIDB_GLOBAL_VAULT_INSECURE_SSL` | `global` | `vault_insecure_ssl` |
+| `PKIDB_GLOBAL_VAULT_TIMEOUT` | `global` | `vault_timeout` |
+| `PKIDB_MYSQL_DATABASE` | `mysql` | `database` |
+| `PKIDB_MYSQL_HOST` | `mysql` | `host` |
+| `PKIDB_MYSQL_PASSPHRASE` | `mysql` | `passphrase` |
+| `PKIDB_MYSQL_PORT` | `mysql` | `port` |
+| `PKIDB_MYSQL_SSLCACERT` | `mysql` | `sslcacert` |
+| `PKIDB_MYSQL_SSLCERT` | `mysql` | `sslcert` |
+| `PKIDB_MYSQL_SSLKEY` | `mysql` | `sslkey` |
+| `PKIDB_MYSQL_SSLMODE` | `pgsql` | `sslmode` |
+| `PKIDB_MYSQL_USER` | `mysql` | `user` |
+| `PKIDB_PGSQL_DATABASE` | `pgsql` | `database` |
+| `PKIDB_PGSQL_HOST` | `pgsql` | `host` |
+| `PKIDB_PGSQL_PASSPHRASE` | `pgsql` | `passphrase` |
+| `PKIDB_PGSQL_PORT` | `pgsql` | `port` |
+| `PKIDB_PGSQL_SSLCACERT` | `pgsql` | `sslcacert` |
+| `PKIDB_PGSQL_SSLCERT` | `pgsql` | `sslcert` |
+| `PKIDB_PGSQL_SSLKEY` | `pgsql` | `sslkey` |
+| `PKIDB_PGSQL_SSLMODE` | `pgsql` | `sslmode` |
+| `PKIDB_PGSQL_USER` | `pgsql` | `user` |
+| `PKIDB_SQLITE3_DATABASE` | `sqlite3` | `database` |
 
 ----
 
