@@ -1,7 +1,9 @@
+[TOC]
+----
 ## Formats
 ### Serial number formats
 
-Serial numbers can be given as the decimal or hexadecimal representation. If the hexadecimal representation is used, it must be prefixed by 0x, e.g. `0xdeadc0de` instead of `3735929054`
+Serial numbers can be given as the decimal or hexadecimal representation. If the hexadecimal representation is used, it must be prefixed by `0x`, e.g. `0xdeadc0de` instead of `3735929054`
 
 ### Time formats
 Every option requiring a time use the same time format. It is a ASN1 GERNERALIZEDTIME string in the format `YYYYMMDDhhmmssZ`
@@ -42,7 +44,7 @@ The `delete` command removes a certficiate identified by the serial number from 
 ***<u>Note:</u>*** *This options should only be used in special circumstances. Usually (for instance if a certificate has been issued with wrong information like missing or misspelled `subjectAltName`) it should be revoked and reissued instead.*
 
 ### Export the public key of a certificate - `export`
-The `export` command writes the base64 encoded X509 data of a certificate (PEM format). Serial number of the certificate must be given or will be from the standard input. The certificate will be written to standard output or to a file if the `--output` option is used. 
+The `export` command writes the base64 encoded X509 data of a certificate (PEM format). The serial number of the certificate must be given or will be read from the standard input. The certificate will be written to standard output or to a file if the `--output` option is used. 
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
@@ -60,7 +62,7 @@ This command requires the public and private keys of the certificate to (configu
 The generation function to generate the certificate revocation list ([x509.Certificate.CreateCRL](https://golang.org/pkg/crypto/x509/#Certificate.CreateCRL)) always use SHA256. This is hardcoded in the function and can't be changed.
 
 ### Verify integrity of the backend data - `healthcheck`
-***Note:*** At the moment this command will do nothing, because of a known bug in Go! - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.14. Futhermore this command is considered as deprecated, discrepancies can only occur if the database was modified directly (obviously a unsupported case) and will be removed in future versions.
+***Note:*** At the moment this command will do nothing, because of a known bug in Go! - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.14. Futhermore this command is considered as deprecated, because discrepancies can only occur if the database was modified directly (obviously a unsupported case) and will be removed in future versions.
 
 <strike>
 To verify the integrity the `healthcheck` command is used. It will compare the information stored in the certificates public key with the fields of the database backend and report discrepancies. The -f option can be used to replace the database fields with the data extracted from the certificate.
@@ -71,15 +73,14 @@ To verify the integrity the `healthcheck` command is used. It will compare the i
 | `--fix` | - | - | Stored data will be replaced with data from the certifiate stored in the database. |
 
 ### General "housekeeping" - `housekeeping`
-The `housekeeping` command should be run at regular intervals. It will check all certificates in the database for expiration, renew auto renewable certificates (if the option `--auto-renew` is used).
+The `housekeeping` command should be run at regular intervals. It will check all certificates in the database for expiration and renew auto renewable certificates (if the option `--auto-renew` is used).
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
-| `-–auto-renew` | - | - | Renew auto renawable certificates that will expire |
+| `-–auto-renew` | - | - | Renew auto renewable certificates that will expire |
 | `-–period` | New validity period in days | Value stored in the backend database | New validity period for auto renewed certificate in days |
 
 ***Note:*** Auto renewal will fail if the certificate uses `GENERALIZEDTIME` to encode dates instead of `UTCTIME` due to a known bug in Go! - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842).
-
 
 ### Import a certificate - `import`
 To import a certificate the import command is used. If a file name is given it will be read from the file, otherwise it will be read from standard input.
@@ -90,8 +91,9 @@ To import a certificate the import command is used. If a file name is given it w
 | `-–csr` | Certificate signing request in PEM format | - | Certificate signing request used for certificate creation |
 | `-–delta` | Days before expiration to start auto renew process | - | For auto renewable certificates the auto renew process starts if the time til expiration is less than the given number of days |
 | `-–period` | New validity period in days for auto renewed certificate | Value of validity_period in the configuration file | New validity period for auto renewed certificate |
-| `-–revoked` | `reason,time` | - | Import certificate and mark it as revoked. `reason` is the revocation reason and can be one of `unspecified`, `keyCompromise`, `CACompromise`, `affiliationChanged`, `superseded`, `cessationOfOperation`, `certificateHold`, `privilegeWithdrawn`, `removeFromCRL`, `aACompromise` (see [RFC 5280, Section 5.3.1. Reason Code](https://tools.ietf.org/html/rfc5280#section-5.3.1). `time` is the time of the revocation |
-
+| `-–revoked` | `reason,time` | - | Import certificate and mark it as revoked. `reason` is the revocation reason and can be one of |
+| | | | `unspecified`, `keyCompromise`, `CACompromise`, `affiliationChanged`, `superseded`, `cessationOfOperation`, `certificateHold`, `privilegeWithdrawn`, `removeFromCRL`, `aACompromise` (see [RFC 5280, Section 5.3.1. Reason Code](https://tools.ietf.org/html/rfc5280#section-5.3.1). |
+| | | |`time` is the time of the revocation |
 
 ### List certificates - `list`
 Using the `list` command a list of serial numbers of certificates from the backend. The list will be written to standard output if the option `--output` is not used.
@@ -121,12 +123,14 @@ The `renew` command renews a cerificate. The serial number of the certificate mu
 To restore the database from a JSON file (generated with the `backup` command) the `restore` command can be used. If the filename of the input data is given on the command line the content will be read from the file, otherwise standard input is used. `backup` and `restore` can be used to migrate to another database type.
 
 ### Revoking a certificate - `revoke`
-By using the `revoke` command a certificate, identified by its serial number, can be revoked. The serial number must be given on the command line or it will be read from standard input. If not specified the revocation reason ill be set to `unspecified`.
+By using the `revoke` command a certificate, identified by its serial number, can be revoked. The serial number must be given on the command line or it will be read from standard input. If not specified the revocation reason will be set to `unspecified`.
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
 | `-–force` | - | - | Revoke certificate even it is not present in the database. A dummy entry will be inserted in the database and marked as revoked |
-| `-–reason` | revocation reason | `unspecified` | Set revocation reason for certificate. The revocation reason is specified in [RFC 5280, Section 5.3.1 Reason Code](https://tools.ietf.org/html/rfc5280#section-5.3.1) and can be one of `unspecified`, `keyCompromise`, `CACompromise`, `affiliationChanged`, `superseded`, `cessationOfOperation`, `certificateHold`, `privilegeWithdrawn`, `removeFromCRL`, `aACompromise` |
+| `-–reason` | revocation reason | `unspecified` | Set revocation reason for certificate. |
+| | | | The revocation reason is specified in [RFC 5280, Section 5.3.1 Reason Code](https://tools.ietf.org/html/rfc5280#section-5.3.1) and can be one of |
+| | | | `unspecified`, `keyCompromise`, `CACompromise`, `affiliationChanged`, `superseded`, `cessationOfOperation`, `certificateHold`, `privilegeWithdrawn`, `removeFromCRL`, `aACompromise` |
 | `-–revocation-date` | revocation date for certificate | current date and time | Revocation date must be an ASN1 GERNERALIZEDTIME string in the format `YYYYMMDDhhmmssZ`. If not given, the current date will be used |
 
 ### Search a certificate - `search`
@@ -134,7 +138,7 @@ The `search` command searches certificate subject for a given string. Search str
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
-| `-–output` | Output file | - | Write database dump to a file instead of standard out |
+| `-–output` | Output file | - | Write database dump to a file instead of standard output |
 
 ### Modify meta data - `set`
 The `set` command is used to modify meta data of a certificate identified by the serial number. The serial number of the certificate must be given on the command line or will be read from the standard input if omitted.
@@ -155,7 +159,7 @@ The `set` command is used to modify meta data of a certificate identified by the
 | `-–output` | Output file | - | Write database dump to a file instead of standard out |
 
 ### Signing a certificate signing request - `sign`
-The `sign` command is used to sign a certificate signing request. If the file name containing the certificate signing request is given it will be read, otherwise the signing request will be read from standard input. The signed public key will be written to standard output or to a file if `--output` option is used.
+The `sign` command is used to sign a certificate signing request. If the file name containing the certificate signing request is provided it will be read, otherwise the signing request will be read from standard input. The signed public key will be written to standard output or to a file if `--output` option is used.
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
@@ -165,15 +169,34 @@ The `sign` command is used to sign a certificate signing request. If the file na
 |  |  |  | `subject` - Subject (usually empty) |
 |  |  |  | `issuer` - Issuer (usually empty) |
 |  |  |  | `data` - data of the extension |
-| `-–extended-keyusage` | `flags` | - | Comma separated list of extended key usage bits. Additionally dotted numeric OID are allowed too, e.g. `1.2.3.4.5`. Known extended key usage bits are defined in RFC 5280 `serverAuth`, `clientAuth`, `codeSigning`, `emailProtection`, `timeStamping`, `msCodeInd`, `msCodeCom`, `msCTLSign`, `msSGC`,`nsSGC` |
+| `-–extended-keyusage` | `flags` | - | Comma separated list of extended key usage bits. Additionally dotted numeric OID are allowed too, e.g. `1.2.3.4.5`. |
+|  |  |  | Known extended key usage bits are defined in RFC 5280 as `serverAuth`, `clientAuth`, `codeSigning`, `emailProtection`, `timeStamping`, `msCodeInd`, `msCodeCom`, `msCTLSign`, `msSGC`,`nsSGC`, `any` |
 | `-–san` | `alternatename` | - | `subjectAltName` extension |
 | `-–auto-renew` | - | - | Mark certificate as auto renewable. The `housekeeping` command (with the `--auto-renew` option) will take care of this |
 | `-–basic-constraint` | `data` | - | Set basic constraints for the new certificate |
-| `-–keyusage` | `flags` | - | Comma separated list of keyUsage bits. Known `keyUsage` bits according RFC 5280 to are: `digitalSignature`, `nonRepudiation` (or `contentCommitment`), `keyEncipherment`, `dataEncipherment`, `keyAgreement`, `keyCertSign`, `cRLSign`, `encipherOnly`, `decipherOnly` |
+| `-–keyusage` | `flags` | - | Comma separated list of keyUsage bits. |
+|  |  |  | Known `keyUsage` bits according RFC 5280 to are: `digitalSignature`, `nonRepudiation` (or `contentCommitment`), `keyEncipherment`, `dataEncipherment`, `keyAgreement`, `keyCertSign`, `cRLSign`, `encipherOnly`, `decipherOnly` |
 | `-–output` | Output file | - | Write serial numbers of listed certificate to a file instead to standard output |
 | `-–start-in` | `startin` | current date and time | Validity of the new certificate starts in startin days |
 | `-–template` | `templatefile` | - | Use a template file for certificate signing |
 | `-–valid-for` | `validfor` | `validity_period` in the configuration or the template file | New certificate will be valid for validfor days |
+
+#### Basic constraints
+[RFC 5280 - Section 4.2.1.9](https://tools.ietf.org/html/rfc5280#section-4.2.1.9) only defines two basic constraints - `CA` and `pathlen` - and doesn't define the criticality of the basic constraints. As a consequence the critical flag has been removed for basic constraints and basic constraints are limited to `CA` and `pathlen`.
+
+Additionally supplied `pathlen` will not be set (and an error occures) if `CA` is not set and key usage does not include `keyCertSign`.
+This is mandated by RFC 5280: _<u>CAs MUST NOT include the pathLenConstraint field unless the CA boolean is asserted and the key usage extension asserts the keyCertSign bit</u>._)
+
+#### Subject alternative names
+The criticality of the subject alternative names depend on the subject fields (see [RFC 5280 - Section 4.2.1.6](https://tools.ietf.org/html/rfc5280#section-4.2.1.6)). To ensure generation of valid (according to RFC 5280) certificates the possibility to define the criticality has been removed.
+
+#### Key usage flags are always marked as critical
+Keyusage flags (`pkidb sign --keyusage=...`) are **_always_** defined as CRITICAL as defined in [RFC 5280 - Section 4.2.1.3](https://tools.ietf.org/html/rfc5280#section-4.2.1.3) (_<u>When present, conforming CAs SHOULD mark this extension as critical</u>_).
+
+Hence the option to set the criticality flag of the keyusage flags has been removed.
+
+#### Extended key usage flags
+[RFC 5280 - Section 4.2.1.12](https://tools.ietf.org/html/rfc5280#section-4.2.1.12) defines the behavior for clients to process key usage and extended key usage flags independently and use the certificate as defined by *BOTH* flags. So it's pointless to define the critical flag and the possibility to define it has been removed.
 
 ### Statistics - `statistics`
 The `statistics` command will print a small summary of stored certificates to standard output.
@@ -183,7 +206,7 @@ The `statistics` command will print a small summary of stored certificates to st
 
 # Changes from `python-pkidb`
 ## Getopt short options are no longer supported
-Due to the switch Go! the command-line parsing changes to standard Go! behavior and as a consequence getopt short options are no longer supported.
+Due to the switch to Go! the command-line parsing changes to standard Go! behavior and as a consequence getopt short options are no longer supported.
 
 ## Date format
 If dates are specified the format must **always** be a ASN1 GERNERALIZEDTIME string in the format `YYYYMMDDhhmmssZ`
