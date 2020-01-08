@@ -22,6 +22,10 @@ func FillConfigurationDefaults(cfg *PKIConfiguration) {
 		cfg.Global.CrlValidityPeriod = 7
 	}
 
+	if cfg.Global.VaultTimeout == 0 {
+		cfg.Global.VaultTimeout = 5
+	}
+
 	if cfg.Database != nil {
 		if cfg.Database.Port == 0 {
 			switch cfg.Global.Backend {

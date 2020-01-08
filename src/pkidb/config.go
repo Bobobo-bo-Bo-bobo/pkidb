@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"database/sql"
 	"math/big"
+	"net/http"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type PKIConfiguration struct {
 	Database       *DatabaseConfiguration
 	DBBackend      PKIDBBackend
 	Logging        []LogConfiguration
+	VaultToken     string
 }
 
 // GlobalConfiguration - Global configration (section global from ini file)
@@ -25,6 +27,9 @@ type GlobalConfiguration struct {
 	CaPublicKey          string `ini:"ca_public_key"`
 	CaCertificate        string `ini:"ca_certificate"`
 	CaPrivateKey         string `ini:"ca_private_key"`
+	caPublicKey          []byte
+	caCertificate        []byte
+	caPrivateKey         []byte
 	CaPassphrase         string `ini:"ca_passphrase"`
 	Digest               string `ini:"digest"`
 	SerialNumber         string `ini:"serial_number"`
@@ -33,6 +38,9 @@ type GlobalConfiguration struct {
 	CrlPublicKey         string `ini:"crl_public_key"`
 	CrlCertificate       string `ini:"crl_certificate"`
 	CrlPrivateKey        string `ini:"crl_private_key"`
+	crlPublicKey         []byte
+	crlCertificate       []byte
+	crlPrivateKey        []byte
 	CrlPassphrase        string `ini:"crl_passphrase"`
 	CrlValidityPeriod    int    `ini:"crl_validity_period"`
 	CrlDigest            string `ini:"crl_digest"`
@@ -40,6 +48,8 @@ type GlobalConfiguration struct {
 	Backend              string `ini:"backend"`
 	Sites                string `ini:"sites"`
 	DefaultSite          string `ini:"default_site"`
+	VaultInsecureSSL     bool   `ini:"vault_insecure_ssl"`
+	VaultTimeout         int    `ini:"vault_timeout"`
 }
 
 // DatabaseConfiguration - Database configuration
@@ -237,4 +247,35 @@ type TemplateExtension struct {
 	Critical   bool   `ini:"critical"`
 	Data       string `ini:"data"`
 	DataBase64 string `ini:"data:base64"`
+}
+
+// HTTPResult - Result of HTTP operation
+type HTTPResult struct {
+	Status     string
+	StatusCode int
+	Header     http.Header
+	Content    []byte
+}
+
+// VaultKVResult - Result from Vault GET request
+type VaultKVResult struct {
+	RequestID string    `json:"request_id"`
+	Data      VaultData `json:"data"`
+}
+
+// VaultData - payload from kv store
+type VaultData struct {
+	CaPublicKey        string `json:"ca_public_key"`
+	CaPrivateKey       string `json:"ca_private_key"`
+	CaPassphrase       string `json:"ca_passphrase"`
+	CrlPublicKey       string `json:"crl_public_key"`
+	CrlPrivateKey      string `json:"crl_private_key"`
+	CrlPassphrase      string `json:"crl_passphrase"`
+	DatabasePassphrase string `json:"database_passphrase"`
+	// XXX: In theory this could be read from Vault too but github.com/lib/pq requires certificate _files_ for SSL client authentication.
+	//      Creating temporary files for github.com/lib/pq would create a security risk by exposing the unencrypted private SSL key (but could be
+	//       mitigated by enforcing appropriate file permissions).
+	//	DatabaseSSLCert    string `json:"database_sslcert"`
+	//	DatabaseSSLKey     string `json:"database_sslkey"`
+	//	DatabaseSSLCa      string `json:"database_sslca"`
 }

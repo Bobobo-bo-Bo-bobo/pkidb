@@ -41,7 +41,7 @@ func main() {
 
 	config, err = ParseConfiguration(*configFile)
 	if err != nil {
-		LogMessage(config, LogLevelCritical, err.Error())
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 

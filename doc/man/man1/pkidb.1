@@ -1,4 +1,4 @@
-.TH pkdib 1 "December 17th, 2019" "Version 1.0.1"
+.TH pkdib 1 "January 08th, 2020" "Version 1.1.0"
 .SH NAME
 pkidb - PKI system based on a SQL database back end
 
@@ -715,14 +715,18 @@ Which database back end to use. Possible options are:
 .I ca_certificate
 )
 .br
+.RS
 Environment variable:
 .I PKIDB_GLOBAL_CA_PUBLIC_KEY
 (alternative:
 .I PKIDB_GLOBAL_CA_CERTIFICATE
 )
 .br
+.RE
 .RS
-Absolute path to the public key of the CA certificate.
+Absolute path to the public key of the CA certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below).
 .RE
 .RE
 
@@ -733,7 +737,9 @@ Absolute path to the public key of the CA certificate.
 Environment variable:
 .I PKIDB_GLOBAL_CA_PRIVATE_KEY
 .br
-Absolute path to the private key of the CA certificate.
+Absolute path to the private key of the CA certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below).
 .RE
 .RE
 
@@ -744,7 +750,9 @@ Absolute path to the private key of the CA certificate.
 Environment variable:
 .I PKIDB_GLOBAL_CA_PASSPHRASE
 .br
-The passphrase to decrypt the private key of the CA certificate.
+The passphrase to decrypt the private key of the CA certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) to the secure storage of the passphrase.
 .RE
 .RE
 
@@ -831,7 +839,11 @@ Environment variable:
 .I PKIDB_GLOBAL_CRL_CERTIFICATE
 )
 .br
-The absolute path to the public key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter
+The absolute path to the public key or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) for the certificate to sign the certificate revocation list.
+.br
+This can be the same as the CA certificate but best practices recommend a separate certificate with a shorter
 validity period.
 .RE
 .RE
@@ -843,7 +855,11 @@ validity period.
 Environment variable:
 .I PKIDB_GLOBAL_CRL_PRIVATE_KEY
 .br
-The absolute path to the private key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter
+The absolute path to the private key or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) for the certificate to sign the certificate revocation list.
+.br
+This can be the same as the CA certificate but best practices recommend a separate certificate with a shorter
 validity period.
 .RE
 .RE
@@ -855,7 +871,9 @@ validity period.
 Environment variable:
 .I PKIDB_GLOBAL_CRL_PASSPHRASE
 .br
-The passphrase to decrypt the private key of the certificate used to sign the revocation list.
+The passphrase to decrypt the private key of the certificate used to sign the revocation list or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) to the secure storage of the passphrase.
 .RE
 .RE
 
@@ -885,6 +903,33 @@ Print serial numbers in the "list" output as hexadecimal.
 .br
 The default is
 .B False\c
+.RE
+.RE
+
+.RS
+.I vault_insecure_ssl
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_VAULT_INSECURE_SSL
+.br
+The default is
+.B False
+.RE
+.RE
+
+
+.RS
+.I vault_timeout
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_VAULT_TIMEOUT
+.br
+Timeout in seconds for Vault access.
+.br
+The default is
+.B 5
 .RE
 .RE
 
@@ -1035,7 +1080,9 @@ Environment variable:
 .br
 The password for the 
 .I user
-of the database connection.
+of the database connection or Vault path to the secure storage of the passphrase (see 
+.B HASHICORP VAULT SUPPORT
+below).
 .RE
 .RE
 
@@ -1187,7 +1234,9 @@ The user name for the database connection.
 Environment variable:
 .I PKIDB_PGSQL_PASSPHRASE
 .br
-The password for the 
+The password  or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) for the 
 .I user
 of the database connection.
 .RE
@@ -1239,9 +1288,6 @@ Environment variable:
 .I PKIDB_PGSQL_SSLCACERT
 .br
 Path to the CA public key file (PEM format).
-.br
-.B Note: \c
-This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
 .RE
 .RE
 
@@ -1252,10 +1298,6 @@ This requires PostgreSQL 8.4 or newer, as the client library doesn't support thi
 Environment variable:
 .I PKIDB_PGSQL_SSLCERT
 .br
-Path to the client certificate (PEM format) for client authentication with SSL certificate.
-.br
-.B Note: \c
-This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
 .RE
 .RE
 
@@ -1267,9 +1309,6 @@ Environment variable:
 .I PKIDB_PGSQL_SSLKEY
 .br
 Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate.
-.br
-.B Note: \c
-This requires PostgreSQL 8.4 or newer, as the client library doesn't support this parameter.
 .RE
 .RE
 
@@ -1307,11 +1346,9 @@ Like the configuration file it is in the INI format and contains one or more sec
 
 .BR global
 .RS
-.RS
 The 
 .B global
 section contains general settings. If the section is not present, the values from the configuration file will be used instead. The following options can be used in a template file:
-.RE
 .RE
 
 .RS
@@ -1368,6 +1405,260 @@ can be used to specify base64 encoded binary data.
 .RE
 
 .RE
+.RE
+
+.SH HASHICORP VAULT SUPPORT
+Starting with version 1.1.0, sensitive information like private keys or passwords can be read from Hashicorp Vault (see https://www.hashicorp.com/products/vault/).
+.br
+Setting up, configuring and running a Hashicorp Vault is out of the scope of this document. A running and correctly configured Hashicorp Vault instance is assumed.
+.br
+
+The following conditions must be met:
+.RS
+
+Only the "Key/Value" and the "Cubbyhole" secrets engine are supported.
+
+A 
+.I valid
+token
+.I must
+be acquired (e.g. via "vault login ..." or "vault token renew")
+.I before
+starting this program and the token should
+.I not
+expire during the run time of this program.
+
+The access token is read from either the environment variable
+.I VAULT_TOKEN
+or the file
+.I ${HOME}/.vault-token
+(in this order).
+
+Encrypted private keys must be in PKCS8 format and must be stored base64 encoded (see https://github.com/hashicorp/vault/issues/1423 for futher explanation).
+
+To load values stored in Vault the values should be replaced by the URL pointing to the location in the Vault instance, e.g.
+
+.RS
+ca_public_key = vaults://vault.hashi.corp.vault.instance:8200/secret/user/7adac592-9581-3046-befb-d1ed86d60ee4/pkidb/ca
+.br
+crl_private_key = vaults://vault.hashi.corp.vault.instance:8200/secret/user/7adac592-9581-3046-befb-d1ed86d60ee4/pkidb/crl
+.br
+ca_passphrase = vaults://vault.hashi.corp.vault.instance:8200/secret/user/7adac592-9581-3046-befb-d1ed86d60ee4/pkidb/ca
+.br
+.RE
+
+Supported schemes are:
+
+.I vaults://
+and
+.I https://
+- maps to
+.I https://
+access to the Vault storage.
+.br
+.I vault://
+and
+.I http://
+- maps to
+.I http://
+access to the Vault storage.
+.br
+
+Obviously for security reasons
+.I vaults
+(or 
+.I https
+) should be used in a productive environment.
+
+The names of the keys are pre-defined and can not be changed.
+
+The key names are:
+
+.RS
+
+.B config.ini:
+.I ca_public_key
+-->
+.B Vault:
+.I ca_public_key
+
+.B config.ini:
+.I ca_certificate
+-->
+.B Vault:
+.I ca_public_key
+
+.B config.ini:
+.I ca_private_key
+-->
+.B Vault:
+.I ca_private_key
+
+.B config.ini:
+.I ca_passphrase
+-->
+.B Vault:
+.I ca_passphrase
+
+.B config.ini:
+.I crl_public_key
+-->
+.B Vault:
+.I crl_public_key
+
+.B config.ini:
+.I crl_certificate
+-->
+.B Vault:
+.I crl_public_key
+
+.B config.ini:
+.I crl_private_key
+-->
+.B Vault:
+.I crl_private_key
+
+.B config.ini:
+.I crl_passphrase
+-->
+.B Vault:
+.I crl_passphrase
+
+.B config.ini
+.I passphrase
+(from the database configuration section)
+-->
+.B Vault:
+.I database_passphrase
+
+.RE
+
+.RE
+
+.SH CHANGES FROM PYTHON-PKIDB
+
+.B Getopt short options are no longer supported
+.br
+.RS
+Due to the switch to Go! the command-line parsing changes to standard Go! behavior and as a consequence getopt short options are no longer supported.
+.RE
+
+.B Basic constraints
+.br
+.RS
+RFC 5280 - Section 4.2.1.9 only defines two basic constraints - 
+.I CA
+and 
+.I pathlen
+- and doesn't define the criticality of the basic constraints.
+.br
+As a consequence the critical flag has been removed for basic constraints and basic constraints are limited to
+.I CA
+and
+.I pathlen
+
+
+Additionally supplied 
+.I pathlen
+will not be set (and an error occures) if 
+.I CA
+is not set and key usage does not include
+.I keyCertSign
+
+This is mandated by RFC 5280:
+.I "CAs MUST NOT include the pathLenConstraint field unless the CA boolean is asserted and the key usage extension asserts the keyCertSign bit."
+.RE
+
+.B Subject alternative names
+.br
+.RS
+The criticality of the subject alternative names depend on the subject fields (see RFC 5280 - Section 4.2.1.6).
+.br
+To ensure generation of valid (according to RFC 5280) certificates the possibility to define the criticality has been removed.
+.RE
+
+.B Key usage flags are always marked as critical
+.br
+.RS
+Keyusage flags ("pkidb sign --keyusage=...") are 
+.B always
+defined as CRITICAL as defined in RFC 5280 - Section 4.2.1.3 (
+.I "When present, conforming CAs SHOULD mark this extension as critical."
+)
+.br
+Hence the option to set the criticality flag of the keyusage flags has been removed.
+.RE
+
+.B Extended key usage flags
+.br
+.RS
+RFC 5280 - Section 4.2.1.12 defines the behavior for clients to process key usage and extended key usage flags independently and use the certificate as defined by 
+.B BOTH
+flags. So it's pointless to define the critical flag and the possibility to define it has been removed.
+.br
+The extended key usage flag `any` has been added.
+.RE
+
+.B Signing algorithm for certificate revocation list is ignored
+.br
+.RS
+The generation function to generate the certificate revocation list (
+.I x509.Certificate.CreateCRL
+) 
+.B always
+use SHA256. This is hardcoded in the function and can't be changed, so the value for 
+.I crl_digest
+will be ignored.
+.RE
+
+.B Renewing a certificate will no longer change the notBefore date
+.br
+.RS
+Renewal of certificate using "pkidb renew" will no longer change the start date (notBefore) of the certificate, only the end date (notAfter) will be changed.
+.RE
+
+.SH MIGRATION FROM PYTHON-PKIDB
+
+.B Encrypted private keys
+.br
+.RS
+Due to the inability of Go! to handle encryptes private SSL keys in PEM format (see https://github.com/golang/go/issues/6722)
+all encrypted private keys (for the CA and/or CRL signing) must be converted the PKCS8 format, encrypted with PKCS5 v2 algorithm and stored in the DER format.
+This can be done by using "openssl pksc8" e.g.:
+
+openssl pkcs8 -topk8 -in ca_private.key -out ca_private.der -outform DER
+
+.B Be very careful when using copy&paste to pass in the password, because openssl may use the linebreak in the password of the PKCS8 file!
+
+.RE
+
+.B Value of version in the database
+.br
+.RS
+Contrary to the Python implementation, Go starts the SSL version at 1 instead of 0.
+.br
+The database backend stores the version as it was used by Python.
+.br
+To update the version values in the database by running:
+
+.I UPDATE certificate SET version=3 WHERE version=2;
+
+.RE
+
+.SH BUGS
+.I asn1: time did not serialize back to the original value and may be invalid
+.RS
+This bug is triggered if a certificate uses 
+.I GENERALIZEDTIME
+to encode dates instead of 
+.I UTCTIME 
+This can be checked with
+.I openssl asn1parse
+
+This is a known bug - see https://github.com/golang/go/issues/15842 - hopefully fixed in Go 1.14.
+
+Luckily the impact is limited only to the renewal of such a certificate (e.g. "pkidb renew ...").
+
 .RE
 
 .SH EXAMPLES
@@ -1486,9 +1777,5 @@ data=digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment
 .fi
 .RE
 
-.SH BUGS
-I'm sure!
-
 .SH AUTHOR
 Andreas Maus <pkidb@ypbind.de>
-.SH SEE ALSO

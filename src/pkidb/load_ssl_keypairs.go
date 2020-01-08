@@ -9,12 +9,10 @@ import (
 
 // LoadSSLKeyPairs - load CA/CRL SSL keys and decrypt private key
 func LoadSSLKeyPairs(cfg *PKIConfiguration) error {
-	// XXX: future versions could use other storage like HashiCorp Vault. This should check the url scheme.
-
 	// Note: In special setups a configuration without CA keys can occur. For instance if it is a host
-	//		 only generating the CRL.
+	//               only generating the CRL.
 	if cfg.Global.CaPublicKey != "" && cfg.Global.CaPrivateKey != "" {
-		pub, priv, err := ReadEncryptedKeyPair(cfg.Global.CaPublicKey, cfg.Global.CaPrivateKey, cfg.Global.CaPassphrase)
+		pub, priv, err := DecryptEncryptedKeyPair(cfg.Global.caPublicKey, cfg.Global.caPrivateKey, cfg.Global.CaPassphrase)
 		cacert, err := tls.X509KeyPair(pub, priv)
 		if err != nil {
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -31,7 +29,7 @@ func LoadSSLKeyPairs(cfg *PKIConfiguration) error {
 	}
 
 	if cfg.Global.CrlPublicKey != "" && cfg.Global.CrlPrivateKey != "" {
-		pub, priv, err := ReadEncryptedKeyPair(cfg.Global.CrlPublicKey, cfg.Global.CrlPrivateKey, cfg.Global.CrlPassphrase)
+		pub, priv, err := DecryptEncryptedKeyPair(cfg.Global.crlPublicKey, cfg.Global.crlPrivateKey, cfg.Global.CrlPassphrase)
 		crlcert, err := tls.X509KeyPair(pub, priv)
 		if err != nil {
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())

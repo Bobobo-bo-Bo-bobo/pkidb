@@ -6,34 +6,38 @@ import (
 
 // ValidateConfiguration - validate configuration
 func ValidateConfiguration(cfg *PKIConfiguration) error {
-	if cfg.Global.CaCertificate != "" {
-		if cfg.Global.CaPublicKey == "" {
-			cfg.Global.CaPublicKey = cfg.Global.CaCertificate
+	if len(cfg.Global.caCertificate) != 0 {
+		if len(cfg.Global.caPublicKey) == 0 {
+			cfg.Global.caPublicKey = cfg.Global.caCertificate
 		} else {
 			return fmt.Errorf("%s: Set either ca_certificate or ca_public_key but not both", GetFrame())
 		}
 	}
-	if (cfg.Global.CaPublicKey != "" && cfg.Global.CaPrivateKey == "") || (cfg.Global.CaPublicKey == "" && cfg.Global.CaPrivateKey != "") {
+	if (len(cfg.Global.caPublicKey) != 0 && len(cfg.Global.caPrivateKey) == 0) || (len(cfg.Global.caPublicKey) == 0 && len(cfg.Global.caPrivateKey) != 0) {
 		return fmt.Errorf("%s: If set both ca_public_key and ca_private_key must be defined", GetFrame())
 	}
 
-	if cfg.Global.CrlCertificate != "" {
-		if cfg.Global.CrlPublicKey == "" {
-			cfg.Global.CrlPublicKey = cfg.Global.CrlCertificate
+	if len(cfg.Global.crlCertificate) != 0 {
+		if len(cfg.Global.crlPublicKey) == 0 {
+			cfg.Global.crlPublicKey = cfg.Global.crlCertificate
 		} else {
 			return fmt.Errorf("%s: Set either crl_certificate or crl_public_key but not both", GetFrame())
 		}
 	}
-	if (cfg.Global.CrlPublicKey != "" && cfg.Global.CrlPrivateKey == "") || (cfg.Global.CrlPublicKey == "" && cfg.Global.CrlPrivateKey != "") {
+	if (len(cfg.Global.crlPublicKey) != 0 && len(cfg.Global.crlPrivateKey) == 0) || (len(cfg.Global.crlPublicKey) == 0 && len(cfg.Global.crlPrivateKey) != 0) {
 		return fmt.Errorf("%s: If set both crl_public_key and crl_private_key must be defined", GetFrame())
 	}
 
-	if cfg.Global.CaPrivateKey != "" && cfg.Global.CaPassphrase == "" {
+	if len(cfg.Global.caPrivateKey) != 0 && cfg.Global.CaPassphrase == "" {
 		return fmt.Errorf("%s: Private key for signing CA must be encrypted", GetFrame())
 	}
 
-	if cfg.Global.CrlPrivateKey != "" && cfg.Global.CrlPassphrase == "" {
+	if len(cfg.Global.crlPrivateKey) != 0 && cfg.Global.CrlPassphrase == "" {
 		return fmt.Errorf("%s: Private key for CRL signing must be encrypted", GetFrame())
+	}
+
+	if cfg.Global.VaultTimeout <= 0 {
+		return fmt.Errorf("%s: Vault connection timeout must be greater than 0", GetFrame())
 	}
 
 	if cfg.Database == nil {

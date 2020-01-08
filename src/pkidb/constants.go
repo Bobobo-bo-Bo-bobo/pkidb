@@ -2,12 +2,16 @@ package main
 
 import (
 	"crypto/x509"
+	"fmt"
 	"log/syslog"
 	"math/big"
 )
 
 const name = "pkidb"
-const version = "1.0.2"
+const version = "1.1.0"
+const _url = "https://git.ypbind.de/cgit/pkidb/"
+
+var userAgent = fmt.Sprintf("%s/%s (%s)", name, version, _url)
 
 // DummyCertificateSubject - subject for dummy entry
 const DummyCertificateSubject = "dummy entry"
@@ -259,6 +263,8 @@ var EnvironmentConfigMap = map[string]EnvConfig{
 	"PKIDB_GLOBAL_SERIAL_NUMBER":           EnvConfig{Section: "global", ConfigKey: "serial_number"},
 	"PKIDB_GLOBAL_SITES":                   EnvConfig{Section: "global", ConfigKey: "sites"},
 	"PKIDB_GLOBAL_VALIDITY_PERIOD":         EnvConfig{Section: "global", ConfigKey: "validity_period"},
+	"PKIDB_GLOBAL_VAULT_INSECURE_SSL":      EnvConfig{Section: "global", ConfigKey: "vault_insecure_ssl"},
+	"PKIDB_GLOBAL_VAULT_TIMEOUT":           EnvConfig{Section: "global", ConfigKey: "vault_timeout"},
 	"PKIDB_MYSQL_DATABASE":                 EnvConfig{Section: "mysql", ConfigKey: "database"},
 	"PKIDB_MYSQL_HOST":                     EnvConfig{Section: "mysql", ConfigKey: "host"},
 	"PKIDB_MYSQL_PASSPHRASE":               EnvConfig{Section: "mysql", ConfigKey: "passphrase"},
