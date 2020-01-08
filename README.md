@@ -10,14 +10,19 @@ Serial numbers can be given as the decimal or hexadecimal representation. If the
 ### Time formats
 Every option requiring a time use the same time format. It is a ASN1 GERNERALIZEDTIME string in the format `YYYYMMDDhhmmssZ`
 
+### Multi-site
+The global configuration file can contain a list of "sites" pointing to other configuration files. By selecting a site (global option `--site`) the content of the corresponding
+configuration file is read and merged with the values read from the global configuration file.
+
 ## General options
 General options can always be used and are not bound to a specific command. 
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
-| `--version` | - | - | Shows version |
 | `--config` | Path to configuration file | `/etc/pkidb/config.ini` | Use an alternate configuration file |
 | `--help` | -  | - | Show the help |
+| `--site` | - | - |  Additional site configuration to load |
+| `--version` | - | - | Shows version |
 
 ## Usage and commands
 ### Add dummy certificate in the backend - `add-dummy`
@@ -40,10 +45,10 @@ The `backup` command dumps the content of the backend database in JSON format. T
 |:-------|:--------:|:--------|:-------------|
 | `-–output` | Output file | - | Write database dump to a file instead of standard out |
 
-### Delete a certifcate from the backend - `delete`
-The `delete` command removes a certficiate identified by the serial number from the backend database. If the serial number is not given on the command line it will be read from standard input.
+### Delete a certificate from the backend - `delete`
+The `delete` command removes a certificate identified by the serial number from the backend database. If the serial number is not given on the command line it will be read from standard input.
 
-***<u>Note:</u>*** *This options should only be used in special circumstances. Usually (for instance if a certificate has been issued with wrong information like missing or misspelled `subjectAltName`) it should be revoked and reissued instead.*
+***<u>Note:</u>*** *This options should only be used in special circumstances. Usually it should be revoked and reissued instead, e.g.  if a certificate has been issued with wrong information like missing or misspelled `subjectAltName`*
 
 ### Export the public key of a certificate - `export`
 The `export` command writes the base64 encoded X509 data of a certificate (PEM format). The serial number of the certificate must be given or will be read from the standard input. The certificate will be written to standard output or to a file if the `--output` option is used. 
@@ -59,12 +64,12 @@ The `gencrl` command generates the certificate revocation list containing inform
 |:-------|:--------:|:--------|:-------------|
 | `-–output` | Output file | - | Write database dump to a file instead of standard out |
 
-This command requires the public and private keys of the certificate to (configured as `crl_public_key` and `crl_private_key` in the configuration file) sign the revocation list. Obviously this certificate requires the correct certificate flags (CRL Sign) and extensions (OCSP Signing). The certificate revocation list is only valid for a certain amount of time (defined as `crl_validity_period` in the configuration file) and must be renewed regularily.
+This command requires the public and private keys of the certificate to (configured as `crl_public_key` and `crl_private_key` in the configuration file) sign the revocation list. Obviously this certificate requires the correct certificate flags (CRL Sign) and extensions (OCSP Signing). The certificate revocation list is only valid for a certain amount of time (defined as `crl_validity_period` in the configuration file) and must be renewed regularly.
 
 The generation function to generate the certificate revocation list ([x509.Certificate.CreateCRL](https://golang.org/pkg/crypto/x509/#Certificate.CreateCRL)) always use SHA256. This is hardcoded in the function and can't be changed.
 
 ### Verify integrity of the backend data - `healthcheck`
-***Note:*** At the moment this command will do nothing, because of a known bug in Go! - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.14. Futhermore this command is considered as deprecated, because discrepancies can only occur if the database was modified directly (obviously a unsupported case) and will be removed in future versions.
+***Note:*** At the moment this command will do nothing, because of a known bug in Go! - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.14. Furthermore this command is considered as deprecated, because discrepancies can only occur if the database was modified directly (obviously a unsupported case) and will be removed in future versions.
 
 <strike>
 To verify the integrity the `healthcheck` command is used. It will compare the information stored in the certificates public key with the fields of the database backend and report discrepancies. The -f option can be used to replace the database fields with the data extracted from the certificate.
@@ -72,7 +77,7 @@ To verify the integrity the `healthcheck` command is used. It will compare the i
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
-| `--fix` | - | - | Stored data will be replaced with data from the certifiate stored in the database |
+| `--fix` | - | - | Stored data will be replaced with data from the certificate stored in the database |
 
 ### General "housekeeping" - `housekeeping`
 The `housekeeping` command should be run at regular intervals. It will check all certificates in the database for expiration and renew auto renewable certificates (if the option `--auto-renew` is used).
@@ -103,16 +108,16 @@ Using the `list` command a list of serial numbers of certificates from the backe
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
 | `-–expired` | - | - | List serial numbers of expired certificates |
-| `-–invalid` | - | - | List serial numbers of invalid certificates. Certficates are considered invalid if their start date (notBefore) is in the future |
+| `-–invalid` | - | - | List serial numbers of invalid certificates. Certificates are considered invalid if their start date (notBefore) is in the future |
 | `-–output` | Output file | - | Write serial numbers of listed certificate to a file instead to standard output |
 | `-–revoked` | - | - | List serial numbers of revoked certificates |
-| `-–temporary` | - | - | List "certificates" marked as temporary. Temporary certficates are dummy settings used to "lock" serial numbers during signing of a certificate signing request |
+| `-–temporary` | - | - | List "certificates" marked as temporary. Temporary certificates are dummy settings used to "lock" serial numbers during signing of a certificate signing request |
 | `-–valid` | - | - | List serial numbers of valid certificates. A certificates is considered valid if it is not temporary, not revoked and the validity period (notBefore .. notAfter) has started and the certificate is not expired |
 
 Serial numbers are always printed as decimal or hexadecimal, as configured by `list_as_hex` in the configuration file and/or the environment variable `PKIDB_GLOBAL_LIST_AS_HEX`.
 
 ### Renew certificates - `renew`
-The `renew` command renews a cerificate. The serial number of the certificate must be given on the command line or it will be read from the standard input. The new certificate will be written to standard output or to a file by using the `--output` option.
+The `renew` command renews a certificate. The serial number of the certificate must be given on the command line or it will be read from the standard input. The new certificate will be written to standard output or to a file by using the `--output` option.
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
@@ -165,7 +170,7 @@ The `sign` command is used to sign a certificate signing request. If the file na
 
 | Option | Argument | Default | Description |
 |:-------|:--------:|:--------|:-------------|
-| `-–extension` | `extdata` | - | X509 extension to be included in new certificate. Can be repeated for multiple extensions. extdata is a comma separated list of |
+| `-–extension` | `extdata` | - | X509 extension to be included in new certificate. Can be repeated for multiple extensions. `extdata` is a comma separated list of |
 |  |  |  | `name` - Name of the X509 extension |
 |  |  |  | `critical` - Critical flag. 0: False, 1: True |
 |  |  |  | `subject` - Subject (usually empty) |
@@ -176,33 +181,33 @@ The `sign` command is used to sign a certificate signing request. If the file na
 | `-–san` | `alternatename` | - | `subjectAltName` extension |
 | `-–auto-renew` | - | - | Mark certificate as auto renewable. The `housekeeping` command (with the `--auto-renew` option) will take care of this |
 | `-–basic-constraint` | `data` | - | Set basic constraints for the new certificate |
-| `-–keyusage` | `flags` | - | Comma separated list of keyUsage bits |
+| `-–keyusage` | `flags` | - | Comma separated list of `keyUsage` bits |
 |  |  |  | Known `keyUsage` bits according RFC 5280 to are: `digitalSignature`, `nonRepudiation` (or `contentCommitment`), `keyEncipherment`, `dataEncipherment`, `keyAgreement`, `keyCertSign`, `cRLSign`, `encipherOnly`, `decipherOnly` |
 | `-–output` | Output file | - | Write serial numbers of listed certificate to a file instead to standard output |
-| `-–start-in` | `startin` | current date and time | Validity of the new certificate starts in startin days |
+| `-–start-in` | `startin` | current date and time | Validity of the new certificate starts in `startin` days |
 | `-–template` | `templatefile` | - | Use a template file for certificate signing |
-| `-–valid-for` | `validfor` | `validity_period` in the configuration or the template file | New certificate will be valid for validfor days |
+| `-–valid-for` | `validfor` | `validity_period` in the configuration or the template file | New certificate will be valid for `validfor` days |
 
 #### Basic constraints
 [RFC 5280 - Section 4.2.1.9](https://tools.ietf.org/html/rfc5280#section-4.2.1.9) only defines two basic constraints - `CA` and `pathlen` - and doesn't define the criticality of the basic constraints. As a consequence the critical flag has been removed for basic constraints and basic constraints are limited to `CA` and `pathlen`.
 
-Additionally supplied `pathlen` will not be set (and an error occures) if `CA` is not set and key usage does not include `keyCertSign`.
+Additionally supplied `pathlen` will not be set (and an error occurs) if `CA` is not set and key usage does not include `keyCertSign`.
 This is mandated by RFC 5280: _<u>CAs MUST NOT include the pathLenConstraint field unless the CA boolean is asserted and the key usage extension asserts the keyCertSign bit</u>._)
 
 #### Subject alternative names
 The criticality of the subject alternative names depend on the subject fields (see [RFC 5280 - Section 4.2.1.6](https://tools.ietf.org/html/rfc5280#section-4.2.1.6)). To ensure generation of valid (according to RFC 5280) certificates the possibility to define the criticality has been removed.
 
 #### Key usage flags are always marked as critical
-Keyusage flags (`pkidb sign --keyusage=...`) are **_always_** defined as CRITICAL as defined in [RFC 5280 - Section 4.2.1.3](https://tools.ietf.org/html/rfc5280#section-4.2.1.3) (_<u>When present, conforming CAs SHOULD mark this extension as critical</u>_).
+Key usage flags (`pkidb sign --keyusage=...`) are **_always_** defined as CRITICAL as defined in [RFC 5280 - Section 4.2.1.3](https://tools.ietf.org/html/rfc5280#section-4.2.1.3) (_<u>When present, conforming CAs SHOULD mark this extension as critical</u>_).
 
-Hence the option to set the criticality flag of the keyusage flags has been removed.
+Hence the option to set the criticality flag of the key usage flags has been removed.
 
 #### Extended key usage flags
 [RFC 5280 - Section 4.2.1.12](https://tools.ietf.org/html/rfc5280#section-4.2.1.12) defines the behavior for clients to process key usage and extended key usage flags independently and use the certificate as defined by *BOTH* flags. So it's pointless to define the critical flag and the possibility to define it has been removed.
 
 ### Statistics - `statistics`
 The `statistics` command will print a small summary of stored certificates to standard output.
-***Note:*** Only the keysizes and hashing algorithm of valid certificates are shown.
+***Note:*** Only the key sizes and hashing algorithm of valid certificates are shown.
 
 ---
 
@@ -215,8 +220,8 @@ Starting with version 1.1.0 CA/CRL certificates, private keys, passphrases and d
 
 It is the responsibility of the caller to provide a valid Vault token. The Vault token will be obtained (in this order) from:
 
-   * enviroment variable `VAULT_TOKEN`
-   * read from file `${HOME}/.vault_token` (`vault login` / `vault token renew` will store the current token in this file)
+* environment variable `VAULT_TOKEN`
+* read from file `${HOME}/.vault_token` (`vault login` / `vault token renew` will store the current token in this file)
 
 Only the [Key / Value Secrets Engine](https://www.vaultproject.io/docs/secrets/kv/index.html) is supported.
 
@@ -237,10 +242,10 @@ The name of the keys are hard coded as:
 |:----|:------------|
 | `ca_public_key` | Public key of the CA certificate |
 | `ca_private_key` | Base64 encoded encrypted private key of the CA certificate in PKCS8 format |
-| `ca_passphrase` | Passphrase of the encrypte CA private key |
+| `ca_passphrase` | Passphrase of the encrypted CA private key |
 | `crl_public_key` | Public key of the CRL certificate |
 | `crl_private_key` | Base64 encoded encrypted private key of the CRL certificate in PKCS8 format |
-| `crl_passphrase` | Passphrase of the encrypte CRL private key |
+| `crl_passphrase` | Passphrase of the encrypted CRL private key |
 | `database_passphrase` | Passphrase for database access |
 
 ### Configuration file
@@ -249,31 +254,34 @@ The `global` section contains general configuration settings. Depending on the p
 
 | Configuration variable | Description |
 |:-----------------------|:------------|
+| `auto_renew_start_period` | For auto renewable certificates, the auto renewable will be run if less then `auto_renew_start_period` days are left til expiration |
 | `backend`	| Database backend to use. Possible options are |
-|   | `mysql` - MySQL, requires the MySQLdb Python module |
-|   | `pgsql` - PostgreSQL, requires the psycopg2 Python module |
+|   | `mysql` - MySQL |
+|   | `pgsql` - PostgreSQL |
 |   | `sqlite3` - SQLite3 |
 | `ca_public_key` | Absolute path or Vault URL to the public key of the CA certificate |
-| `ca_private_key` | Absoulte path or Vault URL to the private key of the CA certificate |
+| `ca_private_key` | Absolute path or Vault URL to the private key of the CA certificate |
 | `ca_passphrase` | The passphrase or Vault URL to decrypt the private key of the CA certificate |
-| `digest` | Default message digest to use for certificate signing. See dgst(1) for a complete list of supported message digest algorithm of the current OpenSSL installation |
+| `default_site` | Load configuration from this site if no site has been specified (`--site` option) |
+| `digest` | Default message digest to use for certificate signing. See `dgst(1)` for a complete list of supported message digest algorithm of the current OpenSSL installation |
 | `serial_number` | Method to generate new serial numbers, possible options are: |
 |   | `random `- Use random serial numbers |
 |   | `increment` - Increment the last serial number |
 |   | *Default:* `random` |
-| `validity_period` | The number of days to make a certificate valid |
-| `auto_renew_start_period` | For auto renewable certificates, the auto renewable will be run if less then `auto_renew_start_period` days are left til expiration |
 | `crl_public_key` | The absolute path or Vault URL to the public key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter validity period |
 | `crl_private_key` | The absolute path or Vault URL to the private key for the certificate to sign the certificate revocation list. This can be the same as the CA certificate but it best practices recommend a separate certificate with a shorter validity period |
 | `crl_passphrase` | The passphrase or Vault URL to decrypt the private key of the certificate used to sign the revocation list|
 | `crl_validity_period` | The number of days before the next CRL is due |
+| `list_as_hex` | Show serial numbers as hexadecimal (*Default:* `false` |
+| `sites` | Space separated list of `<sitename>:/path/to/config.for.site` |
+| `validity_period` | The number of days to make a certificate valid |
 | `vault_insecure_ssl` | Don't validate SSL certificate of the Vault server |
 |   | *Default:* `false`
 | `vault_timeout` | Timeout in seconds for Vault requests |
 |   |  *Default:* 5 |
 
 #### Logging section
-The logging section is optional and contains options for logging. A unique user defined string can be used for each logname.
+The logging section is optional and contains options for logging. A unique user defined string can be used for each `logname`.
 The format should be all lowercase letters and numbers and underscores (`_`). If no logging section has been given (or it is empty) the default will be used (Destination: `syslog`, Facility: `user`).
 
 #### MySQL configuration
@@ -282,7 +290,7 @@ The `mysql` section contains configuration settings for the MySQL backend. At le
 | Configuration variable | Description |
 |:-----------------------|:------------|
 | `host` | The hostname or IP address to connect to |
-| `port` | The port mysqld is running on (*Default:* 3306) |
+| `port` | The port MySQL is running on (*Default:* 3306) |
 | `database` | Name of the database to connect to |
 | `user` | The user name for the database connection |
 | `passphrase` | The password or Vault URL for the user of the database connection |
@@ -295,7 +303,7 @@ The `pgsql` section contains configuration settings for the PostgreSQL backend. 
 
 | Configuration variable | Description
 | `host` 	The hostname or IP address to connect to |
-| `port` 	The port postgres is running on (usually 5432) |
+| `port` 	The port PostGres is running on (usually 5432) |
 | `database` 	Name of the database to connect to |
 | `user` 	The user name for the database connection |
 | `passphrase` 	The password or Vault URL for the user of the database connection |
@@ -371,16 +379,16 @@ If dates are specified the format must **always** be a ASN1 GERNERALIZEDTIME str
 ## Basic constraints
 [RFC 5280 - Section 4.2.1.9](https://tools.ietf.org/html/rfc5280#section-4.2.1.9) only defines two basic constraints - `CA` and `pathlen` - and doesn't define the criticality of the basic constraints. As a consequence the critical flag has been removed for basic constraints and basic constraints are limited to `CA` and `pathlen`.
 
-Additionally supplied `pathlen` will not be set (and an error occures) if `CA` is not set and key usage does not include `keyCertSign`.
+Additionally supplied `pathlen` will not be set (and an error occurs) if `CA` is not set and key usage does not include `keyCertSign`.
 This is mandated by RFC 5280: _<u>CAs MUST NOT include the pathLenConstraint field unless the CA boolean is asserted and the key usage extension asserts the keyCertSign bit</u>._)
 
 ## Subject alternative names
 The criticality of the subject alternative names depend on the subject fields (see [RFC 5280 - Section 4.2.1.6](https://tools.ietf.org/html/rfc5280#section-4.2.1.6)). To ensure generation of valid (according to RFC 5280) certificates the possibility to define the criticality has been removed.
 
 ## Key usage flags are always marked as critical
-Keyusage flags (`pkidb sign --keyusage=...`) are **_always_** defined as CRITICAL as defined in [RFC 5280 - Section 4.2.1.3](https://tools.ietf.org/html/rfc5280#section-4.2.1.3) (_<u>When present, conforming CAs SHOULD mark this extension as critical</u>_).
+Key usage flags (`pkidb sign --keyusage=...`) are **_always_** defined as CRITICAL as defined in [RFC 5280 - Section 4.2.1.3](https://tools.ietf.org/html/rfc5280#section-4.2.1.3) (_<u>When present, conforming CAs SHOULD mark this extension as critical</u>_).
 
-Hence the option to set the criticality flag of the keyusage flags has been removed.
+Hence the option to set the criticality flag of the key usage flags has been removed.
 
 ## Extended key usage flags
 [RFC 5280 - Section 4.2.1.12](https://tools.ietf.org/html/rfc5280#section-4.2.1.12) defines the behavior for clients to process key usage and extended key usage flags independently and use the certificate as defined by *BOTH* flags. So it's pointless to define the critical flag and the possibility to define it has been removed.
@@ -403,13 +411,13 @@ The `search` command allows for writing of the result to a file (instead if stan
 
 # Migration from `python-pkidb`
 ## Encrypted private keys
-Due to the inability of Golang to handle encryptes private SSL keys in PEM format (see [crypto/tls: needs a convenience function for reading encrypted keys](https://github.com/golang/go/issues/6722))
+Due to the inability of Golang to handle encrypted private SSL keys in PEM format (see [crypto/tls: needs a convenience function for reading encrypted keys](https://github.com/golang/go/issues/6722))
 all encrypted private keys (for the CA and/or CRL signing) must be converted the PKCS8 format, encrypted with PKCS5 v2 algorithm and stored in the DER format.
 This can be done by using `openssl pksc8` e.g.:
 
 `openssl pkcs8 -topk8 -in ca_private.key -out ca_private.der -outform DER`
 
-:heavy_exclamation_mark: <u>**Be very careful when using copy&paste to pass in the password, because `openssl` may use the linebreak in the password of the PKCS8 file**</u> :heavy_exclamation_mark:
+:heavy_exclamation_mark: <u>**Be very careful when using copy&paste to pass in the password, because `openssl` may use the line break in the password of the PKCS8 file**</u> :heavy_exclamation_mark:
 
 ## Value of `version` in the database
 Contrary to the Python implementation, Go starts the SSL version at 1 instead of 0. The database backend stores the version as it was used by Python. To update the version values in the database by running:
@@ -424,48 +432,48 @@ This bug is triggered if a certificate uses `GENERALIZEDTIME` to encode dates in
 
 ```
 [user@host:~]$ openssl asn1parse -i -in b0rken.pem
-    0:d=0  hl=4 l=1471 cons: SEQUENCE
-    4:d=1  hl=4 l= 935 cons:  SEQUENCE
-    8:d=2  hl=2 l=   3 cons:   cont [ 0 ]
-   10:d=3  hl=2 l=   1 prim:    INTEGER           :02
-   13:d=2  hl=2 l=   8 prim:   INTEGER           :7A7270A09101D38B
-   23:d=2  hl=2 l=  13 cons:   SEQUENCE
-   25:d=3  hl=2 l=   9 prim:    OBJECT            :sha512WithRSAEncryption
-   36:d=3  hl=2 l=   0 prim:    NULL
+0:d=0  hl=4 l=1471 cons: SEQUENCE
+4:d=1  hl=4 l= 935 cons:  SEQUENCE
+8:d=2  hl=2 l=   3 cons:   cont [ 0 ]
+10:d=3  hl=2 l=   1 prim:    INTEGER           :02
+13:d=2  hl=2 l=   8 prim:   INTEGER           :7A7270A09101D38B
+23:d=2  hl=2 l=  13 cons:   SEQUENCE
+25:d=3  hl=2 l=   9 prim:    OBJECT            :sha512WithRSAEncryption
+36:d=3  hl=2 l=   0 prim:    NULL
 [...]
-  109:d=2  hl=2 l=  42 cons:   SEQUENCE
-  111:d=3  hl=2 l=  19 prim:    GENERALIZEDTIME   :20160106171308+0000
-  132:d=3  hl=2 l=  19 prim:    GENERALIZEDTIME   :20190105171308+0000
-  153:d=2  hl=3 l= 141 cons:   SEQUENCE
+109:d=2  hl=2 l=  42 cons:   SEQUENCE
+111:d=3  hl=2 l=  19 prim:    GENERALIZEDTIME   :20160106171308+0000
+132:d=3  hl=2 l=  19 prim:    GENERALIZEDTIME   :20190105171308+0000
+153:d=2  hl=3 l= 141 cons:   SEQUENCE
 [...]
-  943:d=1  hl=2 l=  13 cons:  SEQUENCE
-  945:d=2  hl=2 l=   9 prim:   OBJECT            :sha512WithRSAEncryption
-  956:d=2  hl=2 l=   0 prim:   NULL
-  958:d=1  hl=4 l= 513 prim:  BIT STRING
+943:d=1  hl=2 l=  13 cons:  SEQUENCE
+945:d=2  hl=2 l=   9 prim:   OBJECT            :sha512WithRSAEncryption
+956:d=2  hl=2 l=   0 prim:   NULL
+958:d=1  hl=4 l= 513 prim:  BIT STRING
 ```
 
-instead of:
+Instead of:
 
 ```
 [user@host:~]$ openssl asn1parse -i -in utctime.pem
-    0:d=0  hl=4 l=1057 cons: SEQUENCE
-    4:d=1  hl=4 l= 521 cons:  SEQUENCE
-    8:d=2  hl=2 l=   3 cons:   cont [ 0 ]
-   10:d=3  hl=2 l=   1 prim:    INTEGER           :02
-   13:d=2  hl=2 l=   8 prim:   INTEGER           :76BBE54F84C600BB
-   23:d=2  hl=2 l=  13 cons:   SEQUENCE
-   25:d=3  hl=2 l=   9 prim:    OBJECT            :sha512WithRSAEncryption
-   36:d=3  hl=2 l=   0 prim:    NULL
+0:d=0  hl=4 l=1057 cons: SEQUENCE
+4:d=1  hl=4 l= 521 cons:  SEQUENCE
+8:d=2  hl=2 l=   3 cons:   cont [ 0 ]
+10:d=3  hl=2 l=   1 prim:    INTEGER           :02
+13:d=2  hl=2 l=   8 prim:   INTEGER           :76BBE54F84C600BB
+23:d=2  hl=2 l=  13 cons:   SEQUENCE
+25:d=3  hl=2 l=   9 prim:    OBJECT            :sha512WithRSAEncryption
+36:d=3  hl=2 l=   0 prim:    NULL
 [...]
-  109:d=2  hl=2 l=  30 cons:   SEQUENCE
-  111:d=3  hl=2 l=  13 prim:    UTCTIME           :180701110127Z
-  126:d=3  hl=2 l=  13 prim:    UTCTIME           :210630110127Z
-  141:d=2  hl=2 l=  92 cons:   SEQUENCE
+109:d=2  hl=2 l=  30 cons:   SEQUENCE
+111:d=3  hl=2 l=  13 prim:    UTCTIME           :180701110127Z
+126:d=3  hl=2 l=  13 prim:    UTCTIME           :210630110127Z
+141:d=2  hl=2 l=  92 cons:   SEQUENCE
 [...]
-  529:d=1  hl=2 l=  13 cons:  SEQUENCE
-  531:d=2  hl=2 l=   9 prim:   OBJECT            :sha512WithRSAEncryption
-  542:d=2  hl=2 l=   0 prim:   NULL
-  544:d=1  hl=4 l= 513 prim:  BIT STRING
+529:d=1  hl=2 l=  13 cons:  SEQUENCE
+531:d=2  hl=2 l=   9 prim:   OBJECT            :sha512WithRSAEncryption
+542:d=2  hl=2 l=   0 prim:   NULL
+544:d=1  hl=4 l= 513 prim:  BIT STRING
 
 ```
 
