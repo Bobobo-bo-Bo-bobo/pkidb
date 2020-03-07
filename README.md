@@ -255,7 +255,7 @@ The `global` section contains general configuration settings. Depending on the p
 | Configuration variable | Description |
 |:-----------------------|:------------|
 | `auto_renew_start_period` | For auto renewable certificates, the auto renewable will be run if less then `auto_renew_start_period` days are left til expiration |
-| `backend`	| Database backend to use. Possible options are |
+| `backend` | Database backend to use. Possible options are |
 |   | `mysql` - MySQL |
 |   | `pgsql` - PostgreSQL |
 |   | `sqlite3` - SQLite3 |
@@ -301,20 +301,21 @@ The `mysql` section contains configuration settings for the MySQL backend. At le
 #### PostgreSQL configuration
 The `pgsql` section contains configuration settings for the PostgreSQL backend. At least `host`, `database`, `user` and `password` must be set.
 
-| Configuration variable | Description
-| `host` 	The hostname or IP address to connect to |
-| `port` 	The port PostGres is running on (usually 5432) |
-| `database` 	Name of the database to connect to |
-| `user` 	The user name for the database connection |
-| `passphrase` 	The password or Vault URL for the user of the database connection |
-| `sslmode` 	SSL protection level 3). Valid values are:
+| Configuration variable | Description |
+|:-----------------------|:------------|
+| `host` | The hostname or IP address to connect to |
+| `port` | The port PostGres is running on (usually 5432) |
+| `database` | Name of the database to connect to |
+| `user` | The user name for the database connection |
+| `passphrase` | The password or Vault URL for the user of the database connection |
+| `sslmode` | SSL protection level 3). Valid values are:
 |   | `disable` - Don't use SSL at all |
 |   | `require` - Use SSL but don't check the server certificate |
 |   | `verify-ca` - Use SSL and check if the server certificate has been signed by the correct CA |
 |   | `verify-full` - Use SSL and check the server name in the certificate and the signing CA of the server certificate |
-| `sslcacert` 	Path to the CA public key file (PEM format) |
-| `sslcert` 	Path to the client certificate (PEM format) for client authentication with SSL certificate |
-| `sslkey` 	Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate |
+| `sslcacert` | Path to the CA public key file (PEM format) |
+| `sslcert` | Path to the client certificate (PEM format) for client authentication with SSL certificate |
+| `sslkey` | Path to the client certificate key file (PKCS#1 format) for client authentication with SSL certificate |
 
 #### SQLite3 configuration
 The `sqlite3` section contains configuration settings for the SQLite3 backend. The `database` options is mandatory.
@@ -417,7 +418,7 @@ This can be done by using `openssl pksc8` e.g.:
 
 `openssl pkcs8 -topk8 -in ca_private.key -out ca_private.der -outform DER`
 
-:heavy_exclamation_mark: <u>**Be very careful when using copy&paste to pass in the password, because `openssl` may use the line break in the password of the PKCS8 file**</u> :heavy_exclamation_mark:
+<u>**Be very careful when using copy&paste to pass in the password, because `openssl` may use the line break in the password of the PKCS8 file**</u>
 
 ## Value of `version` in the database
 Contrary to the Python implementation, Go starts the SSL version at 1 instead of 0. The database backend stores the version as it was used by Python. To update the version values in the database by running:
@@ -477,7 +478,7 @@ Instead of:
 
 ```
 
-This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.14.
+This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.15.
 
 Luckily the impact is limited only to the renewal of such a certificate (e.g. `pkidb renew ...`).
 
