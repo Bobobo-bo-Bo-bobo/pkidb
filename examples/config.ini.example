@@ -63,6 +63,10 @@ crl_digest = sha512
 # default: false
 list_as_hex = True
 
+ocsp_uri = http://example.com:8080/ocsp
+ocsp_public_key = /path/to/public/ocsp/certificate
+ocsp_private_key = /path/to/private/ocsp/certificate
+
 [logging]
 # format:
 # <user_defined_string>=<level>,<destination>:<option>

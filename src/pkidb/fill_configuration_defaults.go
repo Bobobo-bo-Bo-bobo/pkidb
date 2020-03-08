@@ -26,6 +26,10 @@ func FillConfigurationDefaults(cfg *PKIConfiguration) {
 		cfg.Global.VaultTimeout = 5
 	}
 
+	if cfg.Global.OcspDigest == "" {
+		cfg.Global.OcspDigest = "sha1"
+	}
+
 	if cfg.Database != nil {
 		if cfg.Database.Port == 0 {
 			switch cfg.Global.Backend {

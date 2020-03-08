@@ -1,14 +1,17 @@
 package main
 
 import (
+	"crypto"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"fmt"
 	"log/syslog"
 	"math/big"
 )
 
 const name = "pkidb"
-const version = "1.1.0"
+const version = "1.1.1-20200308"
 const _url = "https://git.ypbind.de/cgit/pkidb/"
 
 var userAgent = fmt.Sprintf("%s/%s (%s)", name, version, _url)
@@ -167,6 +170,15 @@ var DigestMap = map[string]x509.SignatureAlgorithm{
 	"sha256": x509.SHA256WithRSA,
 	"sha384": x509.SHA384WithRSA,
 	"sha512": x509.SHA512WithRSA,
+}
+
+// DigestHashMap - Map OpenSSL digest to Golang crypto.Hash
+var DigestHashMap = map[string]crypto.Hash{
+	"md5":    crypto.MD5,
+	"sha1":   crypto.SHA1,
+	"sha224": crypto.SHA224,
+	"sha256": crypto.SHA256,
+	"sha512": crypto.SHA512,
 }
 
 // SignatureAlgorithmNameMap - map x509.SignatureAlgorithm to (Python) names
@@ -674,6 +686,7 @@ var HelpTextMap = map[string]string{
 	"housekeeping": HelpTextHousekeeping,
 	"import":       HelpTextImport,
 	"list":         HelpTextList,
+	"ocsp":         HelpTextOcsp,
 	"renew":        HelpTextRenew,
 	"restore":      HelpTextRestore,
 	"revoke":       HelpTextRevoke,
@@ -699,3 +712,17 @@ const HelpText = `Usage: %s [-c <cfg>|--config=<cfg>] [-h|--help] <command> [<co
 
   Commands:
 `
+
+// HelpTextOcsp - help text for ocsp
+const HelpTextOcsp = `
+   ocsp                                     Start web server to process OCSP requests
+
+     --uri=<uri>                            Listen and process OCEP requests on <uri>
+
+`
+
+// PublicKeyInformation - extract information from pulic key for issuerKeyHash generation
+type PublicKeyInformation struct {
+	Algorithm pkix.AlgorithmIdentifier
+	PublicKey asn1.BitString
+}

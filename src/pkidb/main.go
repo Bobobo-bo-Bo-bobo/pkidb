@@ -7,13 +7,14 @@ import (
 	"os"
 )
 
+var config *PKIConfiguration
+
 func main() {
 	var configFile = flag.String("config", DefaultConfigurationFile, "default configuration file if not specified otherwise")
 	var site = flag.String("site", "", "")
 	var help = flag.Bool("help", false, "Show help")
 	var version = flag.Bool("version", false, "Show version information")
 	var ok bool
-	var config *PKIConfiguration
 	var command string
 	var sites = make(map[string]*PKIConfiguration)
 	var err error

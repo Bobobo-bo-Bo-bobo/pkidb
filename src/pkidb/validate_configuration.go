@@ -56,5 +56,10 @@ func ValidateConfiguration(cfg *PKIConfiguration) error {
 		return fmt.Errorf("%s: Invalid database port", GetFrame())
 	}
 
+	_, found := DigestHashMap[cfg.Global.OcspDigest]
+	if !found {
+		return fmt.Errorf("%s: Invalid OCSP digest", GetFrame())
+	}
+
 	return nil
 }

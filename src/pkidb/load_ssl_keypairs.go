@@ -45,5 +45,21 @@ func LoadSSLKeyPairs(cfg *PKIConfiguration) error {
 		cfg.CRLCertificate = nil
 	}
 
+	if cfg.Global.OcspPublicKey != "" && cfg.Global.OcspPrivateKey != "" {
+		pub, priv, err := DecryptEncryptedKeyPair(cfg.Global.ocspPublicKey, cfg.Global.ocspPrivateKey, cfg.Global.OcspPassphrase)
+		ocspcert, err := tls.X509KeyPair(pub, priv)
+		if err != nil {
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		cfg.OCSPCertificate = &ocspcert
+		ocspPub, _ := pem.Decode(pub)
+		cfg.OCSPPublicKey, err = x509.ParseCertificate(ocspPub.Bytes)
+		if err != nil {
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+	} else {
+		cfg.OCSPPublicKey = nil
+		cfg.OCSPCertificate = nil
+	}
 	return nil
 }

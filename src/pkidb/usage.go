@@ -33,51 +33,71 @@ func showHelp(command string, copyright bool) {
 func showHelpAddDummy() {
 	showHelp("add-dummy", true)
 }
+
 func showHelpBackup() {
 	showHelp("backup", true)
 }
+
 func showHelpDelete() {
 	showHelp("delete", true)
 }
+
 func showHelpExport() {
 	showHelp("export", true)
 }
+
 func showHelpGenCRL() {
 	showHelp("gencrl", true)
 }
+
 func showHelpHealthcheck() {
 	showHelp("healthcheck", true)
 }
+
 func showHelpHousekeeping() {
 	showHelp("housekeeping", true)
 }
+
 func showHelpImport() {
 	showHelp("import", true)
 }
+
 func showHelpList() {
 	showHelp("list", true)
 }
+
+func showHelpOcsp() {
+	showHelp("ocsp", true)
+}
+
 func showHelpRenew() {
 	showHelp("renew", true)
 }
+
 func showHelpRestore() {
 	showHelp("restore", true)
 }
+
 func showHelpRevoke() {
 	showHelp("revoke", true)
 }
+
 func showHelpSearch() {
 	showHelp("search", true)
 }
+
 func showHelpSet() {
 	showHelp("set", true)
 }
+
 func showHelpShow() {
 	showHelp("show", true)
 }
+
 func showHelpSign() {
 	showHelp("sign", true)
 }
+
 func showHelpStatistics() {
 	showHelp("statistics", true)
 }

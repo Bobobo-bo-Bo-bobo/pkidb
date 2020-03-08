@@ -78,11 +78,16 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 	if err != nil {
 		return &config, err
 	}
+	err = FetchDataOCSP(&config)
+	if err != nil {
+		return &config, err
+	}
 
 	err = LoadSSLKeyPairs(&config)
 	if err != nil {
 		return &config, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
+
 	// [<database>]
 	switch config.Global.Backend {
 	case "mysql":

@@ -11,15 +11,18 @@ import (
 
 // PKIConfiguration - Configuration
 type PKIConfiguration struct {
-	CAPublicKey    *x509.Certificate
-	CACertificate  *tls.Certificate
-	CRLPublicKey   *x509.Certificate
-	CRLCertificate *tls.Certificate
-	Global         GlobalConfiguration
-	Database       *DatabaseConfiguration
-	DBBackend      PKIDBBackend
-	Logging        []LogConfiguration
-	VaultToken     string
+	CAPublicKey     *x509.Certificate
+	CACertificate   *tls.Certificate
+	CRLPublicKey    *x509.Certificate
+	CRLCertificate  *tls.Certificate
+	OCSPPublicKey   *x509.Certificate
+	OCSPCertificate *tls.Certificate
+	Global          GlobalConfiguration
+	Database        *DatabaseConfiguration
+	DBBackend       PKIDBBackend
+	Logging         []LogConfiguration
+	OCSP            OCSPConfiguration
+	VaultToken      string
 }
 
 // GlobalConfiguration - Global configration (section global from ini file)
@@ -50,6 +53,15 @@ type GlobalConfiguration struct {
 	DefaultSite          string `ini:"default_site"`
 	VaultInsecureSSL     bool   `ini:"vault_insecure_ssl"`
 	VaultTimeout         int    `ini:"vault_timeout"`
+	OcspPublicKey        string `ini:"ocsp_public_key"`
+	OcspCertificate      string `ini:"ocsp_certificate"`
+	OcspPrivateKey       string `ini:"ocsp_private_key"`
+	OcspURI              string `ini:"ocsp_uri"`
+	ocspPublicKey        []byte
+	ocspCertificate      []byte
+	ocspPrivateKey       []byte
+	OcspPassphrase       string `ini:"crl_passphrase"`
+	OcspDigest           string `ini:"ocsp_digest"`
 }
 
 // DatabaseConfiguration - Database configuration
@@ -278,4 +290,13 @@ type VaultData struct {
 	//	DatabaseSSLCert    string `json:"database_sslcert"`
 	//	DatabaseSSLKey     string `json:"database_sslkey"`
 	//	DatabaseSSLCa      string `json:"database_sslca"`
+	OcspPublicKey  string `json:"ocsp_public_key"`
+	OcspPrivateKey string `json:"ocsp_private_key"`
+	OcspPassphrase string `json:"ocsp_passphrase"`
+}
+
+// OCSPConfiguration - OCSP configuration
+type OCSPConfiguration struct {
+	Address string
+	Path    string
 }

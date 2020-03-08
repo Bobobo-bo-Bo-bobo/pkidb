@@ -12,6 +12,7 @@ depend:
 	env GOPATH=$(GOPATH) go get -u github.com/youmark/pkcs8
 	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/pbkdf2
 	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/scrypt
+	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/ocsp
 	env GOPATH=$(GOPATH) go get -u github.com/lib/pq
 	env GOPATH=$(GOPATH) go get -u github.com/go-sql-driver/mysql
 	env GOPATH=$(GOPATH) go get -u github.com/mattn/go-sqlite3
