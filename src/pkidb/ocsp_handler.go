@@ -17,6 +17,7 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 	var err error
 	var ocspResponse ocsp.Response
 	var reply []byte
+	var _rstr = ""
 
 	defer func() {
 		// Prevent memory leak by consuming content body
@@ -101,6 +102,12 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 	caNameHash := hf.Sum(nil)
 
 	if bytes.Equal(caKeyHash, ocspRequest.IssuerKeyHash) && bytes.Equal(caNameHash, ocspRequest.IssuerNameHash) {
+		if config.Global.ListAsHex {
+			LogMessage(config, LogLevelInfo, fmt.Sprintf("OCSP request from %s for serial number 0x%s", request.RemoteAddr, ocspRequest.SerialNumber.Text(16)))
+		} else {
+			LogMessage(config, LogLevelInfo, fmt.Sprintf("OCSP request from %s for serial number %s", request.RemoteAddr, ocspRequest.SerialNumber.Text(10)))
+		}
+
 		found, err := config.DBBackend.IsUsedSerialNumber(config, ocspRequest.SerialNumber)
 		if err != nil {
 			LogMessage(config, LogLevelCritical, fmt.Sprintf("Connection to database backend failed: %s", err.Error()))
@@ -111,6 +118,13 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 		if !found {
+			if config.Global.ListAsHex {
+				LogMessage(config, LogLevelWarning, fmt.Sprintf("Requested serial number 0x%s not found in database backend", ocspRequest.SerialNumber.Text(16)))
+			} else {
+				LogMessage(config, LogLevelWarning, fmt.Sprintf("Requested serial number %s not found in database backend", ocspRequest.SerialNumber.Text(10)))
+			}
+
+			_rstr = "unknown"
 			ocspResponse.Status = ocsp.Unknown
 		} else {
 			info, err := config.DBBackend.GetCertificateInformation(config, ocspRequest.SerialNumber)
@@ -140,6 +154,8 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 			ocspResponse.IssuerHash = dgst
 
 			if info.Revoked != nil {
+				_rstr = "revoked"
+
 				ocspResponse.Status = ocsp.Revoked
 				ocspResponse.RevokedAt = info.Revoked.Time
 				reason, found := RevocationReasonMap[info.Revoked.Reason]
@@ -153,12 +169,20 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 					writeOCSPResponse(response, ocsp.InternalErrorErrorResponse)
 					return
 				}
+
+				if config.Global.ListAsHex {
+					LogMessage(config, LogLevelInfo, fmt.Sprintf("Requested serial number 0x%s has been revoked at %s, reason %s", ocspRequest.SerialNumber.Text(16), info.Revoked.Time, info.Revoked.Reason))
+				} else {
+					LogMessage(config, LogLevelInfo, fmt.Sprintf("Requested serial number %s has been revoked at %s, reason %s", ocspRequest.SerialNumber.Text(10), info.Revoked.Time, info.Revoked.Reason))
+				}
+
 				// Don't report unused value of "7", report "unspecified" instead
 				if reason == 7 {
 					reason = 0
 				}
 				ocspResponse.RevocationReason = reason
 			} else {
+				_rstr = "good"
 				ocspResponse.Status = ocsp.Good
 			}
 		}
@@ -185,11 +209,23 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 		}
 
 	} else {
+		if config.Global.ListAsHex {
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("We are not responsible for serial number 0x%s (IssuerHash and/or NameHash from OCSP request don't match with values from our CA), rejecting request from %s", ocspRequest.SerialNumber.Text(16), request.RemoteAddr))
+		} else {
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("We are not responsible for serial number %s (IssuerHash and/or NameHash from OCSP request don't match with values from our CA), rejecting request from %s", ocspRequest.SerialNumber.Text(10), request.RemoteAddr))
+		}
+
 		// OCSP errors are _not_ signed, see RFC 6960 - 2.3.  Exception Cases
 		// at https://tools.ietf.org/html/rfc6960#section-2.3
+		_rstr = "unauthorized"
 		reply = ocsp.UnauthorizedErrorResponse
 	}
 
+	if config.Global.ListAsHex {
+		LogMessage(config, LogLevelInfo, fmt.Sprintf("Sending OCSP response '%s' for serial number 0x%s to %s", _rstr, ocspRequest.SerialNumber.Text(16), request.RemoteAddr))
+	} else {
+		LogMessage(config, LogLevelInfo, fmt.Sprintf("Sending OCSP response '%s' for serial number %s to %s", _rstr, ocspRequest.SerialNumber.Text(10), request.RemoteAddr))
+	}
 	writeOCSPResponse(response, reply)
 	return
 }

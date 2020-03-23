@@ -13,6 +13,10 @@ func LoadSSLKeyPairs(cfg *PKIConfiguration) error {
 	//               only generating the CRL.
 	if cfg.Global.CaPublicKey != "" && cfg.Global.CaPrivateKey != "" {
 		pub, priv, err := DecryptEncryptedKeyPair(cfg.Global.caPublicKey, cfg.Global.caPrivateKey, cfg.Global.CaPassphrase)
+		if err != nil {
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
 		cacert, err := tls.X509KeyPair(pub, priv)
 		if err != nil {
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -30,6 +34,10 @@ func LoadSSLKeyPairs(cfg *PKIConfiguration) error {
 
 	if cfg.Global.CrlPublicKey != "" && cfg.Global.CrlPrivateKey != "" {
 		pub, priv, err := DecryptEncryptedKeyPair(cfg.Global.crlPublicKey, cfg.Global.crlPrivateKey, cfg.Global.CrlPassphrase)
+		if err != nil {
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
 		crlcert, err := tls.X509KeyPair(pub, priv)
 		if err != nil {
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
@@ -47,6 +55,10 @@ func LoadSSLKeyPairs(cfg *PKIConfiguration) error {
 
 	if cfg.Global.OcspPublicKey != "" && cfg.Global.OcspPrivateKey != "" {
 		pub, priv, err := DecryptEncryptedKeyPair(cfg.Global.ocspPublicKey, cfg.Global.ocspPrivateKey, cfg.Global.OcspPassphrase)
+		if err != nil {
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+
 		ocspcert, err := tls.X509KeyPair(pub, priv)
 		if err != nil {
 			return fmt.Errorf("%s: %s", GetFrame(), err.Error())

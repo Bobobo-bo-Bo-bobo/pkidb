@@ -60,7 +60,7 @@ type GlobalConfiguration struct {
 	ocspPublicKey        []byte
 	ocspCertificate      []byte
 	ocspPrivateKey       []byte
-	OcspPassphrase       string `ini:"crl_passphrase"`
+	OcspPassphrase       string `ini:"ocsp_passphrase"`
 	OcspDigest           string `ini:"ocsp_digest"`
 }
 

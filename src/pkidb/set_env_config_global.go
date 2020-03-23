@@ -62,6 +62,16 @@ func setConfigurationGlobal(cfg *PKIConfiguration, key string, value string) err
 		default:
 			return fmt.Errorf("%s: Invalid value for PKIDB_GLOBAL_LIST_AS_HEX, use either 1/true/yes or 0/false/no", GetFrame())
 		}
+	case "ocsp_certificate":
+		cfg.Global.OcspCertificate = value
+	case "ocsp_digest":
+		cfg.Global.OcspDigest = value
+	case "ocsp_passphrase":
+		cfg.Global.OcspPassphrase = value
+	case "ocsp_private_key":
+		cfg.Global.OcspPrivateKey = value
+	case "ocsp_public_key":
+		cfg.Global.OcspPublicKey = value
 	case "serial_number":
 		cfg.Global.SerialNumber = value
 	case "sites":
