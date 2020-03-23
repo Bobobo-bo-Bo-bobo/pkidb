@@ -117,6 +117,8 @@ func main() {
 		err = CmdImport(config, trailingArguments[1:])
 	case "list":
 		err = CmdList(config, trailingArguments[1:])
+	case "ocsp":
+		err = CmdOcsp(config, trailingArguments[1:])
 	case "renew":
 		err = CmdRenew(config, trailingArguments[1:])
 	case "restore":

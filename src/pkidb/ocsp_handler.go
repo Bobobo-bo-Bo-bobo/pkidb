@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto"
 	"encoding/asn1"
 	"fmt"
 	"golang.org/x/crypto/ocsp"
@@ -51,12 +52,14 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 
 	case "POST":
 		if request.URL.Path != config.OCSP.Path {
+			LogMessage(config, LogLevelWarning, fmt.Sprintf("Requested URL path %s is not the configured OCSP path %s", request.URL.Path, config.OCSP.Path))
 			response.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(response, "404 Not Found")
 			return
 		}
 		payload, err := ioutil.ReadAll(request.Body)
 		if err != nil {
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't read request body: %s", err.Error()))
 			response.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(response, err.Error())
 			return
@@ -64,12 +67,14 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 
 		ocspRequest, err = parseOCSPRequest(payload)
 		if err != nil {
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't parse OCSP request: %s", err.Error()))
 			response.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(response, err.Error())
 			return
 		}
 
 	default:
+		LogMessage(config, LogLevelWarning, fmt.Sprintf("Unsupported HTTP methods %s", request.Method))
 		response.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(response, "405 Method Not Allowed")
 		return
@@ -80,6 +85,8 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 
 	_, err = asn1.Unmarshal(config.CAPublicKey.RawSubjectPublicKeyInfo, &pubKeyInfo)
 	if err != nil {
+		LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't unmarshal ASN1 data from OCSP request: %s", err.Error()))
+
 		// OCSP errors are _not_ signed, see RFC 6960 - 2.3.  Exception Cases
 		// at https://tools.ietf.org/html/rfc6960#section-2.3
 		writeOCSPResponse(response, ocsp.InternalErrorErrorResponse)
@@ -96,6 +103,8 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 	if bytes.Equal(caKeyHash, ocspRequest.IssuerKeyHash) && bytes.Equal(caNameHash, ocspRequest.IssuerNameHash) {
 		found, err := config.DBBackend.IsUsedSerialNumber(config, ocspRequest.SerialNumber)
 		if err != nil {
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("Connection to database backend failed: %s", err.Error()))
+
 			// OCSP errors are _not_ signed, see RFC 6960 - 2.3.  Exception Cases
 			// at https://tools.ietf.org/html/rfc6960#section-2.3
 			writeOCSPResponse(response, ocsp.InternalErrorErrorResponse)
@@ -106,6 +115,8 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 		} else {
 			info, err := config.DBBackend.GetCertificateInformation(config, ocspRequest.SerialNumber)
 			if err != nil {
+				LogMessage(config, LogLevelCritical, fmt.Sprintf("Connection to database backend failed: %s", err.Error()))
+
 				// OCSP errors are _not_ signed, see RFC 6960 - 2.3.  Exception Cases
 				// at https://tools.ietf.org/html/rfc6960#section-2.3
 				writeOCSPResponse(response, ocsp.InternalErrorErrorResponse)
@@ -118,6 +129,8 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 
 			dgst, found := DigestHashMap[config.Global.OcspDigest]
 			if !found {
+				LogMessage(config, LogLevelCritical, fmt.Sprintf("Configured OCSP digest %s not found", config.Global.OcspDigest))
+
 				// OCSP errors are _not_ signed, see RFC 6960 - 2.3.  Exception Cases
 				// at https://tools.ietf.org/html/rfc6960#section-2.3
 				writeOCSPResponse(response, ocsp.InternalErrorErrorResponse)
@@ -133,6 +146,8 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 
 				// This should NEVER happen!
 				if !found {
+					LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't map revocation reason %s to numerical value", info.Revoked.Reason))
+
 					// OCSP errors are _not_ signed, see RFC 6960 - 2.3.  Exception Cases
 					// at https://tools.ietf.org/html/rfc6960#section-2.3
 					writeOCSPResponse(response, ocsp.InternalErrorErrorResponse)
@@ -150,7 +165,19 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 
 		// TODO: Create signed OCSP response
 		// reply, err = ocsp.CreateResponse(config.CAPublicKey, config.OCSPPublicKey, ocspResponse, config.OCSPCertificate.PrivateKey)
+		key, ok := config.OCSPCertificate.PrivateKey.(crypto.Signer)
+		if !ok {
+			LogMessage(config, LogLevelCritical, "x509: certificate private key does not implement crypto.Signer")
+
+			response.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(response, "405 Method Not Allowed\nx509: certificate private key does not implement crypto.Signer\n")
+			return
+		}
+
+		reply, err = ocsp.CreateResponse(config.CAPublicKey, config.OCSPPublicKey, ocspResponse, key)
 		if err != nil {
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't create OCSP response: %s", err.Error()))
+
 			// OCSP errors are _not_ signed, see RFC 6960 - 2.3.  Exception Cases
 			// at https://tools.ietf.org/html/rfc6960#section-2.3
 			writeOCSPResponse(response, ocsp.InternalErrorErrorResponse)
