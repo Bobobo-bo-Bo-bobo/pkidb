@@ -109,8 +109,6 @@ func main() {
 		err = CmdExport(config, trailingArguments[1:])
 	case "gencrl":
 		err = CmdGenCRL(config, trailingArguments[1:])
-	case "healthcheck":
-		err = CmdHealthcheck(config, trailingArguments[1:])
 	case "housekeeping":
 		err = CmdHousekeeping(config, trailingArguments[1:])
 	case "import":

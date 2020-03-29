@@ -11,7 +11,7 @@ import (
 )
 
 const name = "pkidb"
-const version = "1.2.0-20200329"
+const version = "1.2.0"
 const _url = "https://git.ypbind.de/cgit/pkidb/"
 
 var userAgent = fmt.Sprintf("%s/%s (%s)", name, version, _url)
@@ -460,14 +460,6 @@ const HelpTextGenCRL = `
      --output=<output>                      Write revocation list to <output> instead of standard output.
 `
 
-// HelpTextHealthcheck - help text for healthcheck
-const HelpTextHealthcheck = `
-   healthcheck                              Verify integrity of the stored certificate data.
-
-   --fix                                    Fix errors. Stored data will be replaced with data from the certifiacte
-                                            stored in the database.
-`
-
 // HelpTextHousekeeping - help text for housekeeping
 const HelpTextHousekeeping = `
    housekeeping                             General "housekeeping". Checking all certificates in the database
@@ -687,7 +679,6 @@ var HelpTextMap = map[string]string{
 	"delete":       HelpTextDelete,
 	"export":       HelpTextExport,
 	"gencrl":       HelpTextGenCRL,
-	"healthcheck":  HelpTextHealthcheck,
 	"housekeeping": HelpTextHousekeeping,
 	"import":       HelpTextImport,
 	"list":         HelpTextList,

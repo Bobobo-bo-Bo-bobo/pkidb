@@ -50,10 +50,6 @@ func showHelpGenCRL() {
 	showHelp("gencrl", true)
 }
 
-func showHelpHealthcheck() {
-	showHelp("healthcheck", true)
-}
-
 func showHelpHousekeeping() {
 	showHelp("housekeeping", true)
 }
