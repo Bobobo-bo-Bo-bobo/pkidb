@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -17,6 +18,7 @@ import (
 // CmdOcsp - Start web server for handling of OCSP requests
 func CmdOcsp(cfg *PKIConfiguration, args []string) error {
 	var err error
+	var tlsCfg *tls.Config
 
 	argParse := flag.NewFlagSet("cmd-ocsp", flag.ExitOnError)
 	var uri = argParse.String("uri", "", "Listen and process OCEP requests on <uri>")
@@ -46,7 +48,7 @@ func CmdOcsp(cfg *PKIConfiguration, args []string) error {
 		return fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
-	if _uri.Scheme != "http" {
+	if _uri.Scheme != "http" && _uri.Scheme != "https" {
 		return fmt.Errorf("%s: Unsupported scheme %s", GetFrame(), _uri.Scheme)
 	}
 
@@ -104,9 +106,22 @@ func CmdOcsp(cfg *PKIConfiguration, args []string) error {
 		Handler:      router,
 	}
 
+	if _uri.Scheme == "https" {
+		tlsCfg, err = generateTLSConfiguration(cfg)
+		if err != nil {
+			return fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+		httpSrv.TLSConfig = tlsCfg
+		httpSrv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
+	}
+
 	// start HTTP server in background to listen for signals and gracefully shutdown the server
 	go func() {
-		err := httpSrv.ListenAndServe()
+		if _uri.Scheme == "https" {
+			err = httpSrv.ListenAndServeTLS(cfg.Global.OcspServerPublicKey, cfg.Global.OcspServerPrivateKey)
+		} else {
+			err = httpSrv.ListenAndServe()
+		}
 		if err != nil {
 			LogMessage(cfg, LogLevelCritical, fmt.Sprintf("%s: %s", GetFrame(), err.Error()))
 		}
@@ -126,4 +141,24 @@ func CmdOcsp(cfg *PKIConfiguration, args []string) error {
 	httpSrv.Shutdown(_ctx)
 
 	return nil
+}
+
+func generateTLSConfiguration(cfg *PKIConfiguration) (*tls.Config, error) {
+	if cfg.Global.OcspServerPublicKey == "" || cfg.Global.OcspServerPrivateKey == "" {
+		return nil, fmt.Errorf("%s: No server certificate files provided", GetFrame())
+	}
+
+	result := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+	}
+
+	return result, nil
 }

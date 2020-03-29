@@ -62,6 +62,8 @@ type GlobalConfiguration struct {
 	ocspPrivateKey       []byte
 	OcspPassphrase       string `ini:"ocsp_passphrase"`
 	OcspDigest           string `ini:"ocsp_digest"`
+	OcspServerPublicKey  string `ini:"ocsp_server_public_key"`
+	OcspServerPrivateKey string `ini:"ocsp_server_private_key"`
 }
 
 // DatabaseConfiguration - Database configuration
