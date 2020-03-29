@@ -52,12 +52,6 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 		 */
 
 	case "POST":
-		if request.URL.Path != config.OCSP.Path {
-			LogMessage(config, LogLevelWarning, fmt.Sprintf("Requested URL path %s is not the configured OCSP path %s", request.URL.Path, config.OCSP.Path))
-			response.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(response, "404 Not Found")
-			return
-		}
 		payload, err := ioutil.ReadAll(request.Body)
 		if err != nil {
 			LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't read request body: %s", err.Error()))
