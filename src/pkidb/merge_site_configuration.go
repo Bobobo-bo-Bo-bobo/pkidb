@@ -85,6 +85,18 @@ func MergeSiteConfiguration(gcfg *PKIConfiguration, scfg *PKIConfiguration) *PKI
 		ncfg.Global.OcspDigest = scfg.Global.OcspDigest
 	}
 
+	if scfg.Global.OcspURI != "" {
+		ncfg.Global.OcspURI = scfg.Global.OcspURI
+	}
+
+	if scfg.Global.OcspServerPublicKey != "" {
+		ncfg.Global.OcspServerPublicKey = scfg.Global.OcspServerPublicKey
+	}
+
+	if scfg.Global.OcspServerPrivateKey != "" {
+		ncfg.Global.OcspServerPrivateKey = scfg.Global.OcspServerPrivateKey
+	}
+
 	/*
 		if scfg.Global.ListAsHex != "" {
 			ncfg.Global.ListAsHex = scfg.Global.ListAsHex

@@ -1,7 +1,6 @@
 **_Note:_** Because I'm running my own servers for serveral years, main development is done at at https://git.ypbind.de/cgit/pkidb/
 
 ----
-
 ## Formats
 ### Serial number formats
 
@@ -68,17 +67,6 @@ This command requires the public and private keys of the certificate to (configu
 
 The generation function to generate the certificate revocation list ([x509.Certificate.CreateCRL](https://golang.org/pkg/crypto/x509/#Certificate.CreateCRL)) always use SHA256. This is hardcoded in the function and can't be changed.
 
-### Verify integrity of the backend data - `healthcheck`
-***Note:*** At the moment this command will do nothing, because of a known bug in Go! - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.14. Furthermore this command is considered as deprecated, because discrepancies can only occur if the database was modified directly (obviously a unsupported case) and will be removed in future versions.
-
-<strike>
-To verify the integrity the `healthcheck` command is used. It will compare the information stored in the certificates public key with the fields of the database backend and report discrepancies. The -f option can be used to replace the database fields with the data extracted from the certificate.
-</strike>
-
-| Option | Argument | Default | Description |
-|:-------|:--------:|:--------|:-------------|
-| `--fix` | - | - | Stored data will be replaced with data from the certificate stored in the database |
-
 ### General "housekeeping" - `housekeeping`
 The `housekeeping` command should be run at regular intervals. It will check all certificates in the database for expiration and renew auto renewable certificates (if the option `--auto-renew` is used).
 
@@ -115,6 +103,18 @@ Using the `list` command a list of serial numbers of certificates from the backe
 | `-–valid` | - | - | List serial numbers of valid certificates. A certificates is considered valid if it is not temporary, not revoked and the validity period (notBefore .. notAfter) has started and the certificate is not expired |
 
 Serial numbers are always printed as decimal or hexadecimal, as configured by `list_as_hex` in the configuration file and/or the environment variable `PKIDB_GLOBAL_LIST_AS_HEX`.
+
+### OCSP responder service - `ocsp`
+The `ocsp` command starts `pkidb` as a HTTP server to accept and respond to OCSP requests. The service does **not** fork and will remain in the foreground (making it easy to integration as a systemd service). OCSP requests can be submitted by HTTP POST and HTTP GET as specified in [RFC 6960 - X.509 Internet Public Key Infrastructure Online Certificate Status Protocol - OCSP](https://www.ietf.org/rfc/rfc6960.txt).
+
+For OCSP requests using the POST method the content type **MUST** be set to `application/ocsp-request`.
+The content type of the reply is always `application/ocsp-response`.
+
+| Option | Argument | Default | Description |
+|:-------|:--------:|:--------|:-------------|
+| `--uri` | OCSP URI | - | OCSP URI to listen for OCSP requests |
+
+By providing the `--uri` option the value of `ocsp_uri` will be replaced by the parameter of the option.
 
 ### Renew certificates - `renew`
 The `renew` command renews a certificate. The serial number of the certificate must be given on the command line or it will be read from the standard input. The new certificate will be written to standard output or to a file by using the `--output` option.
@@ -273,6 +273,14 @@ The `global` section contains general configuration settings. Depending on the p
 | `crl_passphrase` | The passphrase or Vault URL to decrypt the private key of the certificate used to sign the revocation list|
 | `crl_validity_period` | The number of days before the next CRL is due |
 | `list_as_hex` | Show serial numbers as hexadecimal (*Default:* `false` |
+| `ocsp_public_key` | Absolute path or Vault URL to the public key of the OCSP signing certificate |
+| `ocsp_private_key` | Absolute path or Vault URL to the private key of the OCSP signing certificate |
+| `ocsp_passphrase` | The passphrase or Vault URL to decrypt the private key of the OCSP signing certificate |
+| `ocsp_digest` | Default message digest to use for certificate signing. See `dgst(1)` for a complete list of supported message digest algorithm of the current OpenSSL installation |
+|               | *Default:* `sha1` |
+| `ocsp_uri` | URI to listen for OCSP requests as defined in the `Authority Information Access` field of the certificate |
+| `ocsp_server_public_key` | If the scheme of the `ocsp_uri` is `https` the file containing the server certificates public key |
+| `ocsp_server_private_key` | If the scheme of the `ocsp_uri` is `https` the file containing the server certificates *unencrypted* private key |
 | `sites` | Space separated list of `<sitename>:/path/to/config.for.site` |
 | `validity_period` | The number of days to make a certificate valid |
 | `vault_insecure_ssl` | Don't validate SSL certificate of the Vault server |
@@ -282,7 +290,7 @@ The `global` section contains general configuration settings. Depending on the p
 
 #### Logging section
 The logging section is optional and contains options for logging. A unique user defined string can be used for each `logname`.
-The format should be all lowercase letters and numbers and underscores (`_`). If no logging section has been given (or it is empty) the default will be used (Destination: `syslog`, Facility: `user`).
+The format shou be all lowercase letters and numbers and underscores (`_`). If no logging section has been given (or it is empty) the default will be used (Destination: `syslog`, Facility: `user`).
 
 #### MySQL configuration
 The `mysql` section contains configuration settings for the MySQL backend. At least `host`, `database`, `user` and `password` must be set.
@@ -343,6 +351,14 @@ In addition to the configuration file environment variables can be used. Configu
 | `PKIDB_GLOBAL_DEFAULT_SITE` | `global` | `default_site` |
 | `PKIDB_GLOBAL_DIGEST` | `global` | `digest` |
 | `PKIDB_GLOBAL_LIST_AS_HEX` | `global` | `list_as_hex` |
+| `PKIDB_GLOBAL_OCSP_CERTIFICATE` | `global` | `ocsp_certificate` |
+| `PKIDB_GLOBAL_OCSP_DIGEST` | `global` | `ocsp_digest` |
+| `PKIDB_GLOBAL_OCSP_PASSPHRASE` | `global` | `ocsp_passphrase` |
+| `PKIDB_GLOBAL_OCSP_PRIVATE_KEY` | `global` | `ocsp_private_key` |
+| `PKIDB_GLOBAL_OCSP_PUBLIC_KEY` | `glob` | `ocsp_public_key` |
+| `PKIDB_GLOBAL_OCSP_SERVER_PRIVATE_KEY` | `global` | `ocsp_server_private_key` |
+| `PKIDB_GLOBAL_OCSP_SERVER_PUBLIC_KEY` | `global` | `ocsp_server_public_key` |
+| `PKIDB_GLOBAL_OCSP_URI` | `global` | `ocsp_uri` |
 | `PKIDB_GLOBAL_SERIAL_NUMBER` | `global` | `serial_number` |
 | `PKIDB_GLOBAL_SITES` | `global` | `sites` |
 | `PKIDB_GLOBAL_VALIDITY_PERIOD` | `global` | `validity_period` |
@@ -400,13 +416,16 @@ The extended key usage flag `any` has been added.
 The generation function to generate the certificate revocation list ([x509.Certificate.CreateCRL](https://golang.org/pkg/crypto/x509/#Certificate.CreateCRL)) always use SHA256. This is hardcoded in the function and can't be changed, so the value for `crl_digest` will be ignored.
 
 ## Renewing a certificate will no longer change the `notBefore` date
-Renewal of certificate using `pkidb renew` will no longer change the start date (`notBefore`) of the certificate, only the end date (`notAfter`) will be changed.
+Renewal of certificate using `pkidb renew` will no longer change t start date (`notBefore`) of the certificate, only the end date (`notAfter`) will be changed.
 
 ## Output format for serial numbers
 Serial numbers are always printed as decimal or hexadecimal, as configured by `list_as_hex` in the configuration file and/or the environment variable `PKIDB_GLOBAL_LIST_AS_HEX`.
 
 ## Writing result of the `search` command to a file
 The `search` command allows for writing of the result to a file (instead if standard output) by adding the `--output` option.
+
+## `healthcheck` command has been removed
+Starting with version 1.2.0 the `healthcheck` command has been removed.
 
 ----
 
@@ -418,7 +437,7 @@ This can be done by using `openssl pksc8` e.g.:
 
 `openssl pkcs8 -topk8 -in ca_private.key -out ca_private.der -outform DER`
 
-<u>**Be very careful when using copy&paste to pass in the password, because `openssl` may use the line break in the password of the PKCS8 file**</u>
+:heavy_exclamation_mark: <u>**Be very careful when using copy&paste to pass in the password, because `openssl` may use the line break in the password of the PKCS8 file**</u> :heavy_exclamation_mark:
 
 ## Value of `version` in the database
 Contrary to the Python implementation, Go starts the SSL version at 1 instead of 0. The database backend stores the version as it was used by Python. To update the version values in the database by running:
@@ -481,4 +500,7 @@ Instead of:
 This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.15.
 
 Luckily the impact is limited only to the renewal of such a certificate (e.g. `pkidb renew ...`).
+
+#### No support for nonce extension in OCSP
+The Go! implementation for OCSP doesn't support the (optional) nonce extension, see [x/crypto/ocsp: request and response extensions are not supported #20001](https://github.com/golang/go/issues/20001). If OCSP is usewith the OpenSSL command line (`openssl ocsp ...`) the warning about the missing nonce (`WARNING: no nonce in response`) can be safely ignored.
 
