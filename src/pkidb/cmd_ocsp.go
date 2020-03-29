@@ -51,6 +51,9 @@ func CmdOcsp(cfg *PKIConfiguration, args []string) error {
 	}
 
 	router := mux.NewRouter()
+	subRouterGET := router.Methods("GET").Subrouter()
+	subRouterPOST := router.Methods("POST").Subrouter()
+
 	/* XXX: RFC 6960 make it optional to support https scheme:
 	 *
 	 *   "Where privacy is a requirement, OCSP transactions exchanged using HTTP MAY be
@@ -63,9 +66,9 @@ func CmdOcsp(cfg *PKIConfiguration, args []string) error {
 
 	// Used for HTTP POST
 	if _uri.Path == "" {
-		router.HandleFunc("/", ocspHandler)
+		subRouterPOST.HandleFunc("/", ocspHandler)
 	} else {
-		router.HandleFunc(_uri.Path, ocspHandler)
+		subRouterPOST.HandleFunc(_uri.Path, ocspHandler)
 	}
 
 	// Used for HTTP GET
@@ -79,10 +82,11 @@ func CmdOcsp(cfg *PKIConfiguration, args []string) error {
 	 *   revocation, or other local configuration of the OCSP client."
 	 *
 	 */
-
 	// Note: It's tempting to use filepath.Join() instead but this will produce incorrect
 	//       string on Windows, because on Windows the separator is "\" instead of "/".
-	router.HandleFunc(strings.TrimRight(_uri.Path, "/")+"/{ocsp_get_payload}", ocspHandler)
+	// _trimmed := strings.TrimRight(_uri.Path, "/")+"/{ocsp_get_payload:.*}"
+	_trimmed := strings.TrimRight(_uri.Path, "/") + "/{ocsp_get_payload:[A-Za-z0-9/=+]+}"
+	subRouterGET.HandleFunc(_trimmed, ocspHandler)
 
 	cfg.OCSP.Address = _uri.Host
 

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto"
 	"encoding/asn1"
+	"encoding/base64"
 	"fmt"
+	"github.com/gorilla/mux"
 	"golang.org/x/crypto/ocsp"
 	"io/ioutil"
 	"net/http"
@@ -15,9 +17,13 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 	var pubKeyInfo PublicKeyInformation
 	var ocspRequest *ocsp.Request
 	var err error
+	var payload []byte
 	var ocspResponse ocsp.Response
 	var reply []byte
 	var _rstr = ""
+	var muxVars map[string]string
+
+	LogMessage(config, LogLevelInfo, fmt.Sprintf("%s %s request from %s to %s", request.Proto, request.Method, request.RemoteAddr, request.RequestURI))
 
 	defer func() {
 		// Prevent memory leak by consuming content body
@@ -30,17 +36,10 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 		reply = nil
 	}()
 
-	if request.Header.Get("content-type") != "application/ocsp-request" {
-		response.WriteHeader(http.StatusUnsupportedMediaType)
-		fmt.Fprintf(response, "415 Unsupported Media Type")
-		return
-	}
+	muxVars = mux.Vars(request)
 
 	switch request.Method {
-	case "GET": // XXX: Handle OCSP requests using HTTP GET:
-		response.WriteHeader(http.StatusNotImplemented)
-		fmt.Fprintf(response, "501 Not Implemented")
-		return
+	case "GET":
 		/*
 		 * An OCSP request using the GET method is constructed as follows:
 		 *
@@ -50,19 +49,40 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 		 * where {url} may be derived from the value of AuthorityInfoAccess or
 		 * other local configuration of the OCSP client.
 		 */
-
-	case "POST":
-		payload, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't read request body: %s", err.Error()))
-			response.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(response, err.Error())
+		b64Payload, found := muxVars["ocsp_get_payload"]
+		if !found {
+			LogMessage(config, LogLevelWarning, fmt.Sprintf("Requested URL path %s don't contain base64 encoded OCSP request", request.URL.Path))
+			response.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(response, "404 Not Found")
 			return
 		}
 
-		ocspRequest, err = parseOCSPRequest(payload)
+		payload, err = base64.StdEncoding.DecodeString(b64Payload)
 		if err != nil {
-			LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't parse OCSP request: %s", err.Error()))
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("Unable to decode base64 encoded OCSP request for HTTP GET: %s", err.Error()))
+			response.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(response, "400 Bad Request")
+			return
+		}
+
+	case "POST":
+		// HTTP POST should be posted directly to the endpoint without data encoded in the URL path
+		if muxVars != nil && len(muxVars) != 0 {
+			LogMessage(config, LogLevelWarning, fmt.Sprintf("Requested URL path %s is not the configured OCSP path %s for HTTP POST", request.URL.Path, config.OCSP.Path))
+			response.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(response, "404 Not Found")
+			return
+		}
+
+		if request.Header.Get("content-type") != "application/ocsp-request" {
+			response.WriteHeader(http.StatusUnsupportedMediaType)
+			fmt.Fprintf(response, "415 Unsupported Media Type")
+			return
+		}
+
+		payload, err = ioutil.ReadAll(request.Body)
+		if err != nil {
+			LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't read request body: %s", err.Error()))
 			response.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(response, err.Error())
 			return
@@ -72,6 +92,14 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 		LogMessage(config, LogLevelWarning, fmt.Sprintf("Unsupported HTTP methods %s", request.Method))
 		response.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(response, "405 Method Not Allowed")
+		return
+	}
+
+	ocspRequest, err = parseOCSPRequest(payload)
+	if err != nil {
+		LogMessage(config, LogLevelCritical, fmt.Sprintf("Can't parse OCSP request: %s", err.Error()))
+		response.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(response, err.Error())
 		return
 	}
 
