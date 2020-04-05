@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	ini "gopkg.in/ini.v1"
+	"net/url"
 	"strings"
 )
 
@@ -166,5 +167,45 @@ func ParseConfiguration(file string) (*PKIConfiguration, error) {
 		return &config, fmt.Errorf("%s: Unknown database backend found in configuration file", GetFrame())
 	}
 
+	if config.Global.AddOCSPURIs != "" {
+		config.Global.addOCSPURIs, err = processURIList(config.Global.AddOCSPURIs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+	}
+
+	if config.Global.AddCAIssuerURIs != "" {
+		config.Global.addCAIssuerURIs, err = processURIList(config.Global.AddCAIssuerURIs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", GetFrame(), err.Error())
+		}
+	}
+
 	return &config, nil
+}
+
+func processURIList(l string) ([]string, error) {
+	var result []string
+
+	splitted := strings.Split(strings.Replace(l, "\t", " ", -1), " ")
+	for _, s := range splitted {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+
+		_url, err := url.Parse(s)
+		if err != nil {
+			return result, err
+		}
+
+		// don't allow relative URIs
+		if _url.Scheme == "" || _url.Host == "" {
+			return result, fmt.Errorf("%s: Invalid URI", GetFrame())
+		}
+
+		result = append(result, s)
+	}
+
+	return result, nil
 }

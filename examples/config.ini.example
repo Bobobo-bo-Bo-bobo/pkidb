@@ -30,6 +30,10 @@ ca_public_key = /path/to/public/ca/certificate
 ca_private_key = /path/to/private/ca/certificate
 ca_passphrase = ItsSoFluffyImGonnaDie!
 
+# add_ocsp_uris - whitespace separated list of OCSP URIs to add
+add_ocsp_uris = http://fqdn/ca/ocsp http://alternative.locatiou/ocsp
+# add_ca_issuer_uris - list of CA issueing URIs separated by whitespace
+add_ca_issuer_uris = http://fqdn.tos/erve/ca http://alternative.location/cacert
 
 # default message digest to use when signing certificates
 # see man 1 dgst for supported digest algorithm

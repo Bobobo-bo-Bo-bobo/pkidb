@@ -11,7 +11,7 @@ import (
 )
 
 const name = "pkidb"
-const version = "1.2.1-20200404"
+const version = "1.2.1-20200405"
 const _url = "https://git.ypbind.de/cgit/pkidb/"
 
 var userAgent = fmt.Sprintf("%s/%s (%s)", name, version, _url)
@@ -257,6 +257,8 @@ const DefaultConfigurationFile = "/etc/pkidb/config.ini"
 
 // EnvironmentConfigMap - Map environment variables into their configuration sections
 var EnvironmentConfigMap = map[string]EnvConfig{
+	"PKIDB_GLOBAL_ADD_OCSP_URIS":           EnvConfig{Section: "global", ConfigKey: "add_ocsp_uris"},
+	"PKIDB_GLOBAL_ADD_CA_ISSUER_URIS":      EnvConfig{Section: "global", ConfigKey: "add_ca_issuer_uris"},
 	"PKIDB_GLOBAL_AUTO_RENEW_START_PERIOD": EnvConfig{Section: "global", ConfigKey: "auto_renew_start_period"},
 	"PKIDB_GLOBAL_BACKEND":                 EnvConfig{Section: "global", ConfigKey: "backend"},
 	"PKIDB_GLOBAL_CA_CERTIFICATE":          EnvConfig{Section: "global", ConfigKey: "ca_certificate"},

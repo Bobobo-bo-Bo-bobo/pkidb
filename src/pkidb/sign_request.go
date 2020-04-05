@@ -55,6 +55,14 @@ func signRequest(cfg *PKIConfiguration, sr *SigningRequest) ([]byte, error) {
 		URIs:               make([]*url.URL, 0),
 	}
 
+	// add Authority Information Access data if defined in configuration
+	if len(cfg.Global.addOCSPURIs) != 0 {
+		certTemplate.OCSPServer = cfg.Global.addOCSPURIs
+	}
+	if len(cfg.Global.addCAIssuerURIs) != 0 {
+		certTemplate.IssuingCertificateURL = cfg.Global.addCAIssuerURIs
+	}
+
 	for _, _san := range sr.SAN {
 		// check and map SAN extension types. Go! supports DNS, email, IP, URI (but not RID, dirName and otherName ?)
 		switch _san.Type {

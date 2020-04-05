@@ -64,6 +64,10 @@ type GlobalConfiguration struct {
 	OcspDigest           string `ini:"ocsp_digest"`
 	OcspServerPublicKey  string `ini:"ocsp_server_public_key"`
 	OcspServerPrivateKey string `ini:"ocsp_server_private_key"`
+	AddOCSPURIs          string `ini:"add_ocsp_uris"`
+	addOCSPURIs          []string
+	AddCAIssuerURIs      string `ini:"add_ca_issuer_uris"`
+	addCAIssuerURIs      []string
 }
 
 // DatabaseConfiguration - Database configuration
