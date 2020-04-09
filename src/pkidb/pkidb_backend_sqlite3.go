@@ -100,6 +100,7 @@ func (db PKIDBBackendSQLite3) IsFreeSerialNumber(cfg *PKIConfiguration, serial *
 		return false, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
+	tx.Commit()
 	return false, nil
 }
 

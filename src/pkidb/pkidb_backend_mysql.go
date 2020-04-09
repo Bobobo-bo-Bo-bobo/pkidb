@@ -118,6 +118,7 @@ func (db PKIDBBackendMySQL) IsFreeSerialNumber(cfg *PKIConfiguration, serial *bi
 		return false, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
+	tx.Commit()
 	return false, nil
 }
 

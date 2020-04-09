@@ -163,6 +163,7 @@ func (db PKIDBBackendPgSQL) IsFreeSerialNumber(cfg *PKIConfiguration, serial *bi
 		return false, fmt.Errorf("%s: %s", GetFrame(), err.Error())
 	}
 
+	tx.Commit()
 	return false, nil
 }
 
