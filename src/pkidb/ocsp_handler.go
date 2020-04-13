@@ -103,7 +103,6 @@ func ocspHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// XXX: Check issuer issuerNameHash and issuerKeyHash
 	hf := ocspRequest.HashAlgorithm.New()
 
 	_, err = asn1.Unmarshal(config.CAPublicKey.RawSubjectPublicKeyInfo, &pubKeyInfo)
