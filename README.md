@@ -1,6 +1,7 @@
-**_Note:_** Because I'm running my own servers for serveral years, main development is done at at https://git.ypbind.de/cgit/pkidb/
+**_Note:_** Because I'm running my own servers for several years, main development is done at at https://git.ypbind.de/cgit/pkidb/
 
 ----
+
 ## Formats
 ### Serial number formats
 
@@ -254,6 +255,8 @@ The `global` section contains general configuration settings. Depending on the p
 
 | Configuration variable | Description |
 |:-----------------------|:------------|
+| `add_ca_issuer_uris` | White space separated list of CA issuer URIs to add to every signed certificate signing request|
+| `add_ocsp_uris` | White space separated list of OCSP URIs to add to every signed certificate signing request|
 | `auto_renew_start_period` | For auto renewable certificates, the auto renewable will be run if less then `auto_renew_start_period` days are left til expiration |
 | `backend` | Database backend to use. Possible options are |
 |   | `mysql` - MySQL |
@@ -290,10 +293,10 @@ The `global` section contains general configuration settings. Depending on the p
 
 #### Logging section
 The logging section is optional and contains options for logging. A unique user defined string can be used for each `logname`.
-The format shou be all lowercase letters and numbers and underscores (`_`). If no logging section has been given (or it is empty) the default will be used (Destination: `syslog`, Facility: `user`).
+The format should be all lowercase letters and numbers and underscores (`_`). If no logging section has been given (or it is empty) the default will be used (Destination: `syslog`, Facility: `user`).
 
 #### MySQL configuration
-The `mysql` section contains configuration settings for the MySQL backend. At least `host`, `database`, `user` and `password` must be set.
+The `mysql` section contains configuration settings for the MySQL bkend. At least `host`, `database`, `user` and `password` must be set.
 
 | Configuration variable | Description |
 |:-----------------------|:------------|
@@ -337,6 +340,8 @@ In addition to the configuration file environment variables can be used. Configu
 
 | Environment variable | Configuration file section | Configuration file variable |
 |:---------------------|:---------------------------|:----------------------------|
+| `PKIDB_GLOBAL_ADD_CA_ISSUER_URIS` | `global` | `add_ca_issuer_uris` |
+| `PKIDB_GLOBAL_ADD_OCSP_URIS` | `global` | `add_ocsp_uris` |
 | `PKIDB_GLOBAL_AUTO_RENEW_START_PERIOD` | `global` | `auto_renew_start_period` |
 | `PKIDB_GLOBAL_BACKEND` | `global` | `backend` |
 | `PKIDB_GLOBAL_CA_CERTIFICATE` | `global` | `ca_certificate` |
@@ -355,9 +360,9 @@ In addition to the configuration file environment variables can be used. Configu
 | `PKIDB_GLOBAL_OCSP_DIGEST` | `global` | `ocsp_digest` |
 | `PKIDB_GLOBAL_OCSP_PASSPHRASE` | `global` | `ocsp_passphrase` |
 | `PKIDB_GLOBAL_OCSP_PRIVATE_KEY` | `global` | `ocsp_private_key` |
-| `PKIDB_GLOBAL_OCSP_PUBLIC_KEY` | `glob` | `ocsp_public_key` |
+| `PKIDB_GLOBAL_OCSP_PUBLIC_KEY` | `global` | `ocsp_public_key` |
 | `PKIDB_GLOBAL_OCSP_SERVER_PRIVATE_KEY` | `global` | `ocsp_server_private_key` |
-| `PKIDB_GLOBAL_OCSP_SERVER_PUBLIC_KEY` | `global` | `ocsp_server_public_key` |
+| `PKIDB_GLOBAL_OCSP_SERVER_PUBLIC_K` | `global` | `ocsp_server_public_key` |
 | `PKIDB_GLOBAL_OCSP_URI` | `global` | `ocsp_uri` |
 | `PKIDB_GLOBAL_SERIAL_NUMBER` | `global` | `serial_number` |
 | `PKIDB_GLOBAL_SITES` | `global` | `sites` |
@@ -416,7 +421,7 @@ The extended key usage flag `any` has been added.
 The generation function to generate the certificate revocation list ([x509.Certificate.CreateCRL](https://golang.org/pkg/crypto/x509/#Certificate.CreateCRL)) always use SHA256. This is hardcoded in the function and can't be changed, so the value for `crl_digest` will be ignored.
 
 ## Renewing a certificate will no longer change the `notBefore` date
-Renewal of certificate using `pkidb renew` will no longer change t start date (`notBefore`) of the certificate, only the end date (`notAfter`) will be changed.
+Renewal of certificate using `pkidb renew` will no longer change the start date (`notBefore`) of the certificate, only the end date (`notAfter`) will be changed.
 
 ## Output format for serial numbers
 Serial numbers are always printed as decimal or hexadecimal, as configured by `list_as_hex` in the configuration file and/or the environment variable `PKIDB_GLOBAL_LIST_AS_HEX`.
@@ -497,10 +502,10 @@ Instead of:
 
 ```
 
-This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.15.
+This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed ino 1.15.
 
 Luckily the impact is limited only to the renewal of such a certificate (e.g. `pkidb renew ...`).
 
 #### No support for nonce extension in OCSP
-The Go! implementation for OCSP doesn't support the (optional) nonce extension, see [x/crypto/ocsp: request and response extensions are not supported #20001](https://github.com/golang/go/issues/20001). If OCSP is usewith the OpenSSL command line (`openssl ocsp ...`) the warning about the missing nonce (`WARNING: no nonce in response`) can be safely ignored.
+The Go! implementation for OCSP doesn't support the (optional) nonce extension, see [x/crypto/ocsp: request and response extensions are not supported #20001](https://github.com/golang/go/issues/20001). If OCSP is used with the OpenSSL command line (`openssl ocsp ...`) the warning about the missing nonce (`WARNING: no nonce in response`) can be safely ignored.
 
