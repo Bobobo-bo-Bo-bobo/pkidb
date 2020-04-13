@@ -170,7 +170,7 @@ Certificate signing request used for certificate.
 .B \-\-delta=\c
 .I delta_period
 .RS
-For auto renewable certificates the auto renew process starts if the time til expiration is less than
+For auto renewable certificates the auto renew process starts if the time until expiration is less than
 .I delta_period
 days.
 .RE
@@ -265,6 +265,21 @@ List certificates marked as temporary. Temporary certificates are dummy settings
 .B \-\-valid\c
 .RS
 List serial numbers of valid certificates. A certificates is considered valid if it is not temporary, not revoked and the validity period (notBefore .. notAfter) has started and the certificate is not expired.
+.RE
+.RE
+
+.BR ocsp
+.RS
+Start as a web server to handle OCSP requests (via HTTP GET and HTTP POST as specified in RFC 6960)
+.RE
+
+.RS
+.B \-\-uri=\c
+.I uri
+.RS
+Listen and process OCSP requests to 
+.I uri
+instead of the URI configured in the configuration file or environment
 .RE
 .RE
 
@@ -745,6 +760,28 @@ below) to the secure storage of the passphrase.
 .RE
 
 .RS
+.I add_ocsp_uris
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_ADD_OCSP_URIS
+.br
+List of OCSP URIs to add to a signed certificate, separated by white space.
+.RE
+.RE
+
+.RS
+.I add_ca_issuer_uris
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_ADD_CA_ISSUER_URIS
+.br
+List of CA issuer URIs to add to a signed certificate, separated by white space.
+.RE
+.RE
+
+.RS
 .I digest
 .br
 .RS
@@ -891,6 +928,96 @@ Print serial numbers in the "list" output as hexadecimal.
 .br
 The default is
 .B False\c
+.RE
+.RE
+
+.RS
+.I ocsp_public_key
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_OCSP_PUBLIC_KEY
+.br
+.RE
+.RS
+Absolute path to the public key of the OCSP signing certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below).
+.RE
+.RE
+
+.RS
+.I ocsp_private_key
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_OCSP_PRIVATE_KEY
+.br
+Absolute path to the private key of the OCSP signing certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below).
+.RE
+.RE
+
+.RS
+.I ocsp_passphrase
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_OCSP_PASSPHRASE
+.br
+The passphrase to decrypt the private key of the OCSP signing certificate or Vault path (see 
+.B HASHICORP VAULT SUPPORT
+below) to the secure storage of the passphrase.
+.RE
+.RE
+
+.RS
+.I ocsp_uri
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_OCSP_URI
+.br
+URI to listen for OCSP requests
+.RE
+.RE
+
+.RS
+.I ocsp_digest
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_OCSP_DIGEST
+.br
+Message digest to use for OCSP response signing. See
+.IR dgst "(1)
+for a complete list of supported message digest algorithm of the current OpenSSL installation.
+.br
+Default is 
+.I sha1
+.RE
+.RE
+
+.RS
+.I ocsp_server_public_key
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_OCSP_SERVER_PUBLIC_KEY
+.br
+The file containing the public key of the SSL certificate if OCSP is provided using TLS encryption (via https)
+.RE
+.RE
+
+.RS
+.I ocsp_server_private_key
+.br
+.RS
+Environment variable:
+.I PKIDB_GLOBAL_OCSP_SERVER_PRIVATE_KEY
+.br
+The file containing the unencrypted private key of the SSL certificate if OCSP is provided using TLS encryption (via https)
 .RE
 .RE
 
