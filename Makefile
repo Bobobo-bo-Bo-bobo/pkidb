@@ -29,7 +29,7 @@ destdirs:
 strip: build
 	strip --strip-all $(BINDIR)/pkidb
 
-install: strip destdirs install-bin install-man install-etc
+install: strip destdirs install-bin install-man install-etc install-sql
 
 install-bin:
 	install -m 0755 $(BINDIR)/pkidb $(DESTDIR)/usr/bin
