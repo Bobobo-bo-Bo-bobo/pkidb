@@ -7,6 +7,7 @@ Group:          System Environment/Daemons
 License:        GPL
 URL:            https://git.ypbind.de/cgit/pkidb
 Source0:        https://git.ypbind.de/cgit/pkidb/snapshot/pkidb-1.2.1.tar.gz
+# Note: Depending on the Go version shipped with the distribution, a more recent Go version should be used instead
 BuildRequires:  golang
 
 %define dbinit_dir      %{_datadir}/%{name}/initialisation/
