@@ -25,6 +25,7 @@ destdirs:
 	mkdir -p -m 0755 $(DESTDIR)/usr/bin
 	mkdir -p -m 0755 $(DESTDIR)/usr/share/man/man1
 	mkdir -p -m 0755 $(DESTDIR)/etc/pkidb
+	mkdir -p -m 0755 $(DESTDIR)/usr/share/pkidb/initialisation
 
 strip: build
 	strip --strip-all $(BINDIR)/pkidb
