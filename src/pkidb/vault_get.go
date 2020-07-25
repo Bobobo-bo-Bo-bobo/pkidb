@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"os"
 	"path/filepath"
 )
 
@@ -21,6 +22,9 @@ func getVaultToken(cfg *PKIConfiguration) string {
 	if found {
 		content, err := ioutil.ReadFile(filepath.Join(home, ".vault-token"))
 		if err != nil {
+			if os.IsNotExist(err) {
+				return ""
+			}
 			LogMessage(cfg, LogLevelWarning, fmt.Sprintf("%s: Can't read %s: %s", GetFrame(), filepath.Join(home, ".vault-token"), err.Error()))
 			return ""
 		}
