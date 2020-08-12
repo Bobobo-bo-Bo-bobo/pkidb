@@ -1,7 +1,6 @@
 **_Note:_** Because I'm running my own servers for several years, main development is done at at https://git.ypbind.de/cgit/pkidb/
 
 ----
-
 ## Formats
 ### Serial number formats
 
@@ -258,7 +257,7 @@ The `global` section contains general configuration settings. Depending on the p
 | `add_ca_issuer_uris` | White space separated list of CA issuer URIs to add to every signed certificate signing request|
 | `add_ocsp_uris` | White space separated list of OCSP URIs to add to every signed certificate signing request|
 | `auto_renew_start_period` | For auto renewable certificates, the auto renewable will be run if less then `auto_renew_start_period` days are left til expiration |
-| `backend` | Database backend to use. Possible options are |
+| `backend`	| Database backend to use. Possible options are |
 |   | `mysql` - MySQL |
 |   | `pgsql` - PostgreSQL |
 |   | `sqlite3` - SQLite3 |
@@ -296,7 +295,7 @@ The logging section is optional and contains options for logging. A unique user 
 The format should be all lowercase letters and numbers and underscores (`_`). If no logging section has been given (or it is empty) the default will be used (Destination: `syslog`, Facility: `user`).
 
 #### MySQL configuration
-The `mysql` section contains configuration settings for the MySQL bkend. At least `host`, `database`, `user` and `password` must be set.
+The `mysql` section contains configuration settings for the MySQL backend. At least `host`, `database`, `user` and `password` must be set.
 
 | Configuration variable | Description |
 |:-----------------------|:------------|
@@ -362,7 +361,7 @@ In addition to the configuration file environment variables can be used. Configu
 | `PKIDB_GLOBAL_OCSP_PRIVATE_KEY` | `global` | `ocsp_private_key` |
 | `PKIDB_GLOBAL_OCSP_PUBLIC_KEY` | `global` | `ocsp_public_key` |
 | `PKIDB_GLOBAL_OCSP_SERVER_PRIVATE_KEY` | `global` | `ocsp_server_private_key` |
-| `PKIDB_GLOBAL_OCSP_SERVER_PUBLIC_K` | `global` | `ocsp_server_public_key` |
+| `PKIDB_GLOBAL_OCSP_SERVER_PUBLIC_KEY` | `global` | `ocsp_server_public_key` |
 | `PKIDB_GLOBAL_OCSP_URI` | `global` | `ocsp_uri` |
 | `PKIDB_GLOBAL_SERIAL_NUMBER` | `global` | `serial_number` |
 | `PKIDB_GLOBAL_SITES` | `global` | `sites` |
@@ -502,7 +501,7 @@ Instead of:
 
 ```
 
-This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed ino 1.15.
+This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.16.
 
 Luckily the impact is limited only to the renewal of such a certificate (e.g. `pkidb renew ...`).
 
