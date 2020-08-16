@@ -18,6 +18,10 @@ func ParseTemplateFile(template string) (*TemplateConfig, error) {
 
 	sections := cfg.SectionStrings()
 	for _, sect := range sections {
+		if sect == "DEFAULT" {
+			continue
+		}
+
 		if sect == "global" {
 			global, err := cfg.GetSection("global")
 			if err != nil {

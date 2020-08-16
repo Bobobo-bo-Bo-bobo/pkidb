@@ -52,8 +52,10 @@ func ValidateConfiguration(cfg *PKIConfiguration) error {
 		return fmt.Errorf("%s: auto_renew_start_period must be > 0", GetFrame())
 	}
 
-	if cfg.Database.Port <= 0 || cfg.Database.Port > 65535 {
-		return fmt.Errorf("%s: Invalid database port", GetFrame())
+	if cfg.Global.Backend != "sqlite3" {
+		if cfg.Database.Port <= 0 || cfg.Database.Port > 65535 {
+			return fmt.Errorf("%s: Invalid database port", GetFrame())
+		}
 	}
 
 	_, found := DigestHashMap[cfg.Global.OcspDigest]

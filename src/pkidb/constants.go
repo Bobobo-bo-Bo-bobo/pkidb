@@ -11,7 +11,7 @@ import (
 )
 
 const name = "pkidb"
-const version = "1.2.2-20200725"
+const version = "1.2.2-20200816"
 const _url = "https://git.ypbind.de/cgit/pkidb/"
 
 var userAgent = fmt.Sprintf("%s/%s (%s)", name, version, _url)
