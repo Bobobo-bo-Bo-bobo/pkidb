@@ -7,7 +7,7 @@ import (
 
 func showVersion() {
 	fmt.Printf("%s version %s\n"+
-		"Copyright (C) by Andreas Maus <maus@ypbind.de>\n"+
+		"Copyright (C) 2019-2021 by Andreas Maus <maus@ypbind.de>\n"+
 		"This program comes with ABSOLUTELY NO WARRANTY.\n"+
 		"\n"+
 		"%s is distributed under the Terms of the GNU General\n"+
