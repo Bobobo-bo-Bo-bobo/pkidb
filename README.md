@@ -443,6 +443,8 @@ This can be done by using `openssl pksc8` e.g.:
 
 :heavy_exclamation_mark: <u>**Be very careful when using copy&paste to pass in the password, because `openssl` may use the line break in the password of the PKCS8 file**</u> :heavy_exclamation_mark:
 
+:heavy_exclamation_mark: You will at least need **OpenSSL 1.1** for the conversion :heavy_exclamation_mark:
+
 ## Value of `version` in the database
 Contrary to the Python implementation, Go starts the SSL version at 1 instead of 0. The database backend stores the version as it was used by Python. To update the version values in the database by running:
 
