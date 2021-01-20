@@ -503,7 +503,7 @@ Instead of:
 
 ```
 
-This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.16.
+This is a known bug - [encoding/asn1: valid GeneralizedTime not parsed #15842](https://github.com/golang/go/issues/15842) - hopefully fixed in Go 1.17.
 
 Luckily the impact is limited only to the renewal of such a certificate (e.g. `pkidb renew ...`).
 
