@@ -1,25 +1,13 @@
-GOPATH	= $(CURDIR)
 BINDIR	= $(CURDIR)/bin
 DOCDIR	= $(CURDIR)/doc
 ETCDIR	= $(CURDIR)/examples
 DBDIR	= $(CURDIR)/sql
 
-PROGRAMS = pkidb
-
 depend:
-	env GOPATH=$(GOPATH) go get -u gopkg.in/ini.v1
-	env GOPATH=$(GOPATH) go get -u github.com/nu7hatch/gouuid
-	env GOPATH=$(GOPATH) go get -u github.com/youmark/pkcs8
-	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/pbkdf2
-	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/scrypt
-	env GOPATH=$(GOPATH) go get -u golang.org/x/crypto/ocsp
-	env GOPATH=$(GOPATH) go get -u github.com/lib/pq
-	env GOPATH=$(GOPATH) go get -u github.com/go-sql-driver/mysql
-	env GOPATH=$(GOPATH) go get -u github.com/mattn/go-sqlite3
-	env GOPATH=$(GOPATH) go get -u github.com/gorilla/mux
+	# go mod will handle dependencies
 
 build:
-	env GOPATH=$(GOPATH) go install $(PROGRAMS)
+	cd $(CURDIR)/src/pkidb && go build -o $(CURDIR)/bin/pkidb
 
 destdirs:
 	mkdir -p -m 0755 $(DESTDIR)/usr/bin
