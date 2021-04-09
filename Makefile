@@ -7,7 +7,7 @@ depend:
 	# go mod will handle dependencies
 
 build:
-	cd $(CURDIR)/src/pkidb && go build -o $(CURDIR)/bin/pkidb
+	cd $(CURDIR)/src/pkidb && go get pkidb/src/pkidb && go build -o $(CURDIR)/bin/pkidb
 
 destdirs:
 	mkdir -p -m 0755 $(DESTDIR)/usr/bin
